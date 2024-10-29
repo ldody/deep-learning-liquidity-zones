@@ -5,3 +5,4 @@ argparse
 filelock
 tensorflow
 scikit-learn
+matplotlib
