@@ -1,1 +1,7 @@
-
+zipfile
+pandas
+numpy
+argparse
+filelock
+tensorflow
+scikit-learn
