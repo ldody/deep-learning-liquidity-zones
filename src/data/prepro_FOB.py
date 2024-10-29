@@ -45,7 +45,7 @@ class FOBPreprocessor:
 		self.file = ''
 		self.isin = ''
 		
-	def load_FOB(self)
+	def load_FOB(self):
 		"""
 		Load FOB file into a DataFrame.
 		
