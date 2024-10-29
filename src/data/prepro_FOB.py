@@ -248,5 +248,5 @@ if __name__ == "__main__":
 	
 	fobp = FOBPreprocessor(args.job_id)
 	
-		if args.slurm_array:
-			fobp.array_process()
+	if args.slurm_array:
+		fobp.array_process()
