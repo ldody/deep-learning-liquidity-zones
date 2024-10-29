@@ -7,9 +7,32 @@ import argparse
 import FOBDataBaseManagement as fobdm
 
 class FOBPreprocessor:
-	
+	"""
+	Preprocessing FOB to create LOB.
+
+	Args:
+		job_id (int, optionnal): Slurm job ID, Default=0.
+	"""
 	def __init__(self, job_id: int(0)):
+		"""
+		Initializes the FOBPreprocessor instance.
 		
+		Attributes:
+			path (str): Path of the current script.
+			job_id (int): Slurm job ID.
+			raw_path (str): Path of the repository with raw data of FOB /data/raw/FOB/.
+			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
+			fobdm (Class): Class from the FOB database management.
+			FOB (DataFrame): FOB DataFrame.
+			LOB (DataFrame): LOB DataFrame.
+			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
+			filename (str): Name of the final csv file with LOB dataframe.
+			file (str): Name of the FOB file in process.
+			isin (str): Name of the ISIN in process.
+			
+		Args:
+			job_id (int, optionnal): Slurm job ID, Default=0.
+		"""
 		self.path = os.path.dirname(os.path.abspath(__file__))
 		self.job_id = job_id
 		self.raw_path = os.path.join(os.path.dirname(self.path),'data','raw','FOB')
@@ -17,12 +40,32 @@ class FOBPreprocessor:
 		self.fobdm = fobdm(self.job_id)
 		self.FOB = None
 		self.LOB = None
+		self.filename_tmp = None
 		self.filename = None
+		self.file = ''
+		self.isin = ''
 		
-	def load_FOB(self, f, isin)
+	def load_FOB(self)
+		"""
+		Load FOB file into a DataFrame.
 		
+		Attributes:
+			raw_path (str): Path of the repository with raw data of FOB /data/raw/FOB/.
+			file (str): Name of the FOB file in process.
+			FOB (DataFrame): Store the updated FOB DataFrame.
+			isin (str): Name of the ISIN in process.
+			
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
 		chunk = []
-		for chunk in pd.read_csv(os.path.join(raw_path, os.path.splitext(f)[0]), 
+		for chunk in pd.read_csv(os.path.join(raw_path, os.path.splitext(self.file)[0]), 
 								header=0, 
 								low_memory=False, 
 								chunksize=10000, 
@@ -38,7 +81,7 @@ class FOBPreprocessor:
 										'time_in_force', 
 										'trade_size', 
 										'trade_price']):
-			chunk = chunk[chunk['isin'] == isin]
+			chunk = chunk[chunk['isin'] == self.isin]
 
 			chunk['event_time_cet'] = pd.to_datetime(chunk['event_date'] + ' ' + chunk['event_time_cet'])
 			chunk = chunk.drop(columns=['event_date'])
@@ -47,7 +90,21 @@ class FOBPreprocessor:
 		self.FOB = pd.concat(chunks)
 	
 	def shift_orders(self):
+		"""
+		Shift previous order price and size for the same order ID when 'Modify' or 'Cancel' event type.
 		
+		Attributes:
+			FOB (DataFrame): Store the updated FOB DataFrame.
+		
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
 		ls_id = self.FOB[(self.FOB['order_event_type'] == 'Cancel') | (self.FOB['order_event_type'] == 'Modify')]['order_id'].unique().tolist()
 
 		mask = self.FOB['order_id'].isin(ls_id)
@@ -55,34 +112,135 @@ class FOBPreprocessor:
 		self.FOB.loc[mask, 'previous_size'] = self.FOB.loc[mask].groupby('order_id')['order_size'].shift(1)
 	
 	def construct_LOB(self):
+		"""
+		Contruct LOB dataframe.
 		
+		Attributes:
+			FOB (DataFrame): FOB DataFrame.
+			LOB (DataFrame): LOB DataFrame.
+			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
+			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
+		
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
 		time = self.FOB['event_time_cet'].sort_values().unique().tolist()[:7]
 
 		self.LOB = pd.DataFrame(columns=['price', 'size', 'side'])
 		
-		if 'test.csv' in os.listdir(self.processed_path):
-			data = pd.read_csv('test.csv', header=0, index_col=0)
-			data.index = pd.to_datetime(data.index)
-			last_t = pd.to_datetime(data[-1:].index)
+		if self.filename_tmp in os.listdir(self.processed_path):
+			self.LOB = pd.read_csv(os.path.join(self.processed_path, self.filename_tmp), header=0, index_col=0)
+			self.LOB.index = pd.to_datetime(self.LOB.index)
+			last_t = pd.to_datetime(self.LOB[-1:].index)
 			time = [x for x in time if x > last_t]
 			
 			if not time:
-				data.to_csv('test_def.csv', index=True)
-				sys.exit(0)
+				sys.exit(f'{self.isin} already processed in {self.file}')
 				
-			data = data.loc[last_t]
+			self.LOB = self.LOB.loc[last_t]
 	
+		
+		for t in time:
+			for _, row in self.FOB[self.FOB['event_time_cet'] == t].iterrows():
+
+				cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
+				prev_cond = (self.LOB['price'] == row['previous_price']) & (self.LOB['side'] == row['order_side'])
+
+				if (row['order_event_type'] == 'Reload') | (row['order_event_type'] == 'New'):
+
+					if len(self.LOB[cond]) == 0:
+						new_line = pd.Series([row['order_price'], row['order_size'], row['order_side']], index=self.LOB.columns.tolist())
+						self.LOB = pd.concat((self.LOB, new_line.to_frame().T), ignore_index=True)
+
+					else:
+						self.LOB.loc[self.LOB[cond].index, 'size'] += row['order_size']
+
+				elif row['order_event_type'] == 'Fill':
+
+					self.LOB.loc[self.LOB[cond].index, 'size'] -= row['trade_size']
+
+				elif (row['order_event_type'] == 'Modify') | (row['order_event_type'] == 'Cancel'):
+
+					self.LOB.loc[self.LOB[prev_cond].index, 'size'] -= row['previous_size']
+
+					if len(self.LOB[cond]) == 0:
+						new_line = pd.Series([row['order_price'], row['order_size'], row['order_side']], index=self.LOB.columns.tolist())
+						self.LOB = pd.concat((self.LOB, new_line.to_frame().T), ignore_index=True)
+
+					else:
+						self.LOB[self.LOB[cond].index, 'size'] += row['order_size']
+
+			self.LOB = self.LOB.drop(self.LOB[(self.LOB == 0).any(axis=1)].index)    
+			self.LOB = self.LOB.sort_values(by=['side','price'])
+			self.LOB.index = pd.Index([t] * len(self.LOB))
+			
+			self.save_LOB(state='tmp')
+		
+		self.save_LOB(state='def')
+		
+	def save_LOB(self, state: str(tmp)):
+		"""
+		Save LOB as tmp or final csv file.
+		
+		Attributes:
+			LOB (DataFrame): LOB DataFrame.
+			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
+			filename (str): Name of the final csv file with LOB dataframe.
+			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/ where the LOB is saved.
+			
+		Args:
+			state (str, optionnal): tmp or final version of the LOB csv file, Default='tmp'.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
+		if state == 'tmp':
+			if self.filename_tmp not in os.listdir(self.processed_path):
+				self.LOB.to_csv(os.path.join(self.processed_path, self.filename_tmp), index=True)
+			else:
+				self.LOB.to_csv(os.path.join(self.processed_path, self.filename_tmp), mode='a', header=False, index=True)
+				
+		if state == 'def':
+			os.rename(os.path.join(self.processed_path, self.filename_tmp), os.path.join(self.processed_path, self.filename))
 	
 	def array_process(self):
-		file, isin = self.fobdm.main()
-		self.filename = 
-		self.load_FOB(file, isin)
-	
-	
+		"""
+		Lauch FOB preprocessing from slurm array jobs.
+		
+		Attributes:
+			file (str): Name of the FOB file in process.
+			isin (str): Name of the ISIN in process.
+			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
+			filename (str): Name of the final csv file with LOB dataframe.
+		
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
+		self.file, self.isin = self.fobdm.main()
+		date = os.path.splitext(os.path.splitext(file)[0])[0].split('_')[-1]
+		self.filename_tmp = f'{isin}_{date}_tmp.csv'
+		self.filename = f'{isin}_{date}.csv'
+		self.load_FOB()
+		self.construct_LOB()
 	
 	
 if __name__ == "__main__":
-	
+	#retrieving arguments if any, specify processing way (slurm, parallelism, classic)
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--job_id', type=int, default=0)
 	parser.add_argument('--slurm_array', '-sa', type=bool, default=False)
