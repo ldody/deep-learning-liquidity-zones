@@ -213,6 +213,7 @@ class FOBDataBaseManagement():
 			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] != None)
 
 			if self.DB.empty or self.DB[cond].empty:
+				print(self.zip_files, self.DB['file'].unique().tolist())
 				add_file = [f for f in self.zip_files if f not in self.DB['file'].unique().tolist()][0]
 			
 				if os.path.splitext(add_file)[0] not in os.listdir(self.raw_path):
