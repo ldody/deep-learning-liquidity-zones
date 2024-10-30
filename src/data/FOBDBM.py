@@ -106,6 +106,8 @@ class FOBDataBaseManagement():
 			
 		Args:
 			DB_tmp (DataFrame): Empty dataframe of the database.
+			ls (list): List of isin within the file.
+			f (str): Filename.
 
 		Returns:
 			DB_tmp (DataFrame): Temporary dataframe filled with default information.
@@ -141,7 +143,7 @@ class FOBDataBaseManagement():
 				self.extract_zip(add_file)
 				
 			ls = pd.read_csv(os.path.join(self.raw_path, add_file), usecols=['isin'])['isin'].unique().tolist()
-			DB_tmp = self.fill_empty_DB(self._empty_DB_template(), ls)
+			DB_tmp = self.fill_empty_DB(self._empty_DB_template(), ls, add_file)
 			self.DB = pd.concat([self.DB, DB_tmp], ignore_index=True)
 			
 		except Exception as e:
