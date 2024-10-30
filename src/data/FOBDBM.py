@@ -206,6 +206,7 @@ class FOBDataBaseManagement():
 		if self.DB_file not in os.listdir(self.path):
 			print(self._empty_DB_template())
 			self._empty_DB_template().to_csv(os.path.join(self.path, self.DB_file), header=True)
+			print('df =', pd.read_csv(os.path.join(self.path, self.DB_file)))
 			
 		with FileLock(os.path.join(self.path, self.DB_file)):
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
