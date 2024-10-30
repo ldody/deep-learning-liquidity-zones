@@ -11,7 +11,7 @@ class FOBDataBaseManagement():
 	Args:
 		job_id (int, optionnal): Slurm job ID, Default=0.
 	"""
-	def __init__(self, job_id: int(0)):
+	def __init__(self, job_id: int = 0):
 		"""
 		Initializes the FOBDataBaseManagement instance.
 		

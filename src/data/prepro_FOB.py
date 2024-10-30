@@ -15,7 +15,7 @@ class FOBPreprocessor:
 	Args:
 		job_id (int, optionnal): Slurm job ID, Default=0.
 	"""
-	def __init__(self, job_id: int(0)):
+	def __init__(self, job_id: int = 0):
 		"""
 		Initializes the FOBPreprocessor instance.
 		
@@ -186,7 +186,7 @@ class FOBPreprocessor:
 		
 		self.save_LOB(state='def')
 		
-	def save_LOB(self, state: str(tmp)):
+	def save_LOB(self, state: str = 'tmp'):
 		"""
 		Save LOB as tmp or final csv file.
 		
