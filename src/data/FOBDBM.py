@@ -3,6 +3,7 @@ import os, sys
 import zipfile
 import pandas as pd
 from filelock import FileLock
+import numpy as np
 
 class FOBDataBaseManagement():
 	"""
@@ -116,7 +117,7 @@ class FOBDataBaseManagement():
 			None: This method does not raise error.
 		"""
 		DB_tmp['isin'] = ls
-		DB_tmp[['file','state','allocate']] = f,'Pending',None
+		DB_tmp[['file','state','allocate']] = f,'Pending',np.nan
 		
 		return DB_tmp
 		
@@ -187,7 +188,7 @@ class FOBDataBaseManagement():
 		Raises:
 			None: This method does not raise error.
 		"""
-		self.DF.loc[self.DF[cond].index, ['state','allocate']] = 'Terminated', None
+		self.DF.loc[self.DF[cond].index, ['state','allocate']] = 'Terminated', np.nan
 	
 	def main(self):
 		"""
@@ -212,7 +213,7 @@ class FOBDataBaseManagement():
 		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
 			
-			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] == None)
+			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] == np.nan)
 
 			if self.DB.empty or self.DB[cond].empty:
 				self.fill_DB()
