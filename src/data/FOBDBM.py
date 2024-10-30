@@ -213,16 +213,6 @@ class FOBDataBaseManagement():
 			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] != None)
 
 			if self.DB.empty or self.DB[cond].empty:
-				print(self.zip_files, self.DB['file'].unique().tolist())
-				add_file = [f for f in self.zip_files if f not in self.DB['file'].unique().tolist()][0]
-			
-				if os.path.splitext(add_file)[0] not in os.listdir(self.raw_path):
-					self.extract_zip(add_file)
-					
-				ls = pd.read_csv(os.path.join(self.raw_path, add_file), usecols=['isin'])['isin'].unique().tolist()
-				DB_tmp = self.fill_empty_DB(self._empty_DB_template(), ls, add_file)
-				self.DB = pd.concat([self.DB, DB_tmp], ignore_index=True)
-				sys.exit()
 				self.fill_DB()
 				
 			self.file_toprocess, self.isin_toprocess = self.DB[cond].reset_index(drop=True).loc[0, ['file', 'isin']].tolist()
