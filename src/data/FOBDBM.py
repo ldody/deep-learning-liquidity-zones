@@ -217,7 +217,7 @@ class FOBDataBaseManagement():
 			if self.DB.empty or self.DB[cond].empty:
 				self.fill_DB()
 			
-			print(self.DB)            
+			print(self.DB[cond])
 			self.file_toprocess, self.isin_toprocess = self.DB[cond].reset_index(drop=True).loc[0, ['file', 'isin']].tolist()
 			print(self.file_toprocess, self.isin_toprocess)
 			fill_cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
