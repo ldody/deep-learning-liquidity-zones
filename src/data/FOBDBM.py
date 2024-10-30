@@ -217,6 +217,8 @@ class FOBDataBaseManagement():
 
 			if self.DB.empty or self.DB[cond].empty:
 				self.fill_DB()
+				print('empty df rempli')
+				print(self.DB)
 			
 			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] == np.nan)
 			print(self.DB[cond])
