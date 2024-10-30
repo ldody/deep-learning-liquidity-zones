@@ -17,6 +17,7 @@ class FOBDataBaseManagement():
 		
 		Attributes:
 			path (str): Path of the current script.
+			root_path (str): Root path of the project.
 			job_id (int): Slurm job ID.
 			raw_path (str): Path of the repository with raw data of FOB /data/raw/FOB/.
 			zip_files (list): List of the zip files containing FOB.
@@ -29,7 +30,9 @@ class FOBDataBaseManagement():
 			job_id (int, optionnal): Slurm job ID, Default=0.
 		"""
 		self.path = os.path.dirname(os.path.abspath(__file__))
-		self.raw_path = os.path.join(os.path.dirname(self.path),'data','raw','FOB')
+		while os.path.basename(path) != 'PhD_article_2':
+			self.root_path =  os.path.dirname(self.path)
+		self.raw_path = os.path.join(os.path.dirname(self.root_path),'data','raw','FOB')
 		self.zip_files = self._get_zipfiles()
 		self.DB_file = 'FOB_DB.csv'
 		self.DB = None

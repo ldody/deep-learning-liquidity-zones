@@ -21,6 +21,7 @@ class FOBPreprocessor:
 		
 		Attributes:
 			path (str): Path of the current script.
+			root_path (str): Root path of the project.
 			job_id (int): Slurm job ID.
 			raw_path (str): Path of the repository with raw data of FOB /data/raw/FOB/.
 			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
@@ -36,9 +37,11 @@ class FOBPreprocessor:
 			job_id (int, optionnal): Slurm job ID, Default=0.
 		"""
 		self.path = os.path.dirname(os.path.abspath(__file__))
+		while os.path.basename(path) != 'PhD_article_2':
+			self.root_path =  os.path.dirname(self.path)
 		self.job_id = job_id
-		self.raw_path = os.path.join(os.path.dirname(self.path),'data','raw','FOB')
-		self.processed_path = os.path.join(os.path.dirname(self.path),'data','processed','FOB')
+		self.raw_path = os.path.join(os.path.dirname(self.root_path),'data','raw','FOB')
+		self.processed_path = os.path.join(os.path.dirname(self.root_path),'data','processed','FOB')
 		self.fobdm = fobdm(self.job_id)
 		self.FOB = None
 		self.LOB = None
