@@ -244,7 +244,7 @@ class FOBPreprocessor:
 		self.load_FOB()
 		self.construct_LOB()
 	
-	
+print('before if')	
 if __name__ == "__main__":
 	#retrieving arguments if any, specify processing way (slurm, parallelism, classic)
 	parser = argparse.ArgumentParser()
@@ -253,6 +253,6 @@ if __name__ == "__main__":
 	args = parser.parse_args([])
 	
 	fobp = FOBPreprocessor(args.job_id)
-	
+	print('in if')
 	if args.slurm_array:
 		fobp.array_process()
