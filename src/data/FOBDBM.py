@@ -218,11 +218,13 @@ class FOBDataBaseManagement():
 			if self.DB.empty or self.DB[cond].empty:
 				self.fill_DB()
 			
+			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] == np.nan)
 			print(self.DB[cond])
 			self.file_toprocess, self.isin_toprocess = self.DB[cond].reset_index(drop=True).loc[0, ['file', 'isin']].tolist()
 			print(self.file_toprocess, self.isin_toprocess)
 			fill_cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
 			self.fill_state_allocate(fill_cond, 'In progress', self.job_id)
+			print(self.DB)
 		
 		sys.exit()
 		return self.file_toprocess, self.isin_toprocess
