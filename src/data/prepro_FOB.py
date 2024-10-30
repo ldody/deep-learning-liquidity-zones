@@ -253,6 +253,7 @@ if __name__ == "__main__":
 	args = parser.parse_args([])
 	
 	fobp = FOBPreprocessor(args.job_id)
-	print('in if')
+	print('in if',args)
 	if args.slurm_array:
 		fobp.array_process()
+		print('in if array')
