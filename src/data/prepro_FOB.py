@@ -4,9 +4,7 @@ import zipfile
 import pandas as pd
 import numpy as np
 import argparse
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-import FOBDataBaseManagement as fobdm
+from FOBDM import FOBDataBaseManagement as fobdm
 
 class FOBPreprocessor:
 	"""
