@@ -170,7 +170,7 @@ class FOBDataBaseManagement():
 		Raises:
 			None: This method does not raise error.
 		"""
-		self.DF.loc[self.DF[cond].index, ['state','allocate']] = st, alloc
+		self.DB.loc[self.DB[cond].index, ['state','allocate']] = st, alloc
 		
 	def terminate(self):
 		"""
