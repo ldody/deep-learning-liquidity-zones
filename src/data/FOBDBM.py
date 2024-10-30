@@ -164,7 +164,7 @@ class FOBDataBaseManagement():
 		"""
 		self.DF.loc[self.DF[cond].index, ['state','allocate']] = st, alloc
 		
-	def terminate(self)
+	def terminate(self):
 		"""
 		Fill the database dataframe with processing information for termination.
 		
