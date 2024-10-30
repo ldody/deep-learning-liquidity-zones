@@ -93,7 +93,7 @@ class FOBDataBaseManagement():
 		Raises:
 			None: This method does not raise error.
 		"""
-		with zipfile.ZipFile(os.path.join(self.raw_path, s), 'r') as zip_ref:
+		with zipfile.ZipFile(os.path.join(self.raw_path, f), 'r') as zip_ref:
 			zip_ref.extractall(self.raw_path)
 		
 		
