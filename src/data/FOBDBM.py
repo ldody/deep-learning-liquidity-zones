@@ -213,14 +213,14 @@ class FOBDataBaseManagement():
 		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
 			
-			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] == np.nan)
+			cond = (self.DB['state'] != 'Processed') & (~self.DB['allocate'].isna())
 
 			if self.DB.empty or self.DB[cond].empty:
 				self.fill_DB()
 				print('empty df rempli')
 				print(self.DB)
 			
-			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] == np.nan)
+			cond = (self.DB['state'] != 'Processed') & (~self.DB['allocate'].isna())
 			print(self.DB[cond])
 			self.file_toprocess, self.isin_toprocess = self.DB[cond].reset_index(drop=True).loc[0, ['file', 'isin']].tolist()
 			print(self.file_toprocess, self.isin_toprocess)
