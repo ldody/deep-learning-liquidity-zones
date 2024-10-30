@@ -37,11 +37,12 @@ class FOBPreprocessor:
 			job_id (int, optionnal): Slurm job ID, Default=0.
 		"""
 		self.path = os.path.dirname(os.path.abspath(__file__))
-		while os.path.basename(path) != 'PhD_article_2':
-			self.root_path =  os.path.dirname(self.path)
+		self.root_path = self.path
+		while os.path.basename(self.root_path) != 'PhD_article_2':
+			self.root_path =  os.path.dirname(self.root_path)
 		self.job_id = job_id
-		self.raw_path = os.path.join(os.path.dirname(self.root_path),'data','raw','FOB')
-		self.processed_path = os.path.join(os.path.dirname(self.root_path),'data','processed','FOB')
+		self.raw_path = os.path.join(self.root_path,'data','raw','FOB')
+		self.processed_path = os.path.join(self.root_path,'data','processed','FOB')
 		self.fobdm = fobdm(self.job_id)
 		self.FOB = None
 		self.LOB = None

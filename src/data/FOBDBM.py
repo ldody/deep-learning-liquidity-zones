@@ -30,9 +30,10 @@ class FOBDataBaseManagement():
 			job_id (int, optionnal): Slurm job ID, Default=0.
 		"""
 		self.path = os.path.dirname(os.path.abspath(__file__))
-		while os.path.basename(path) != 'PhD_article_2':
-			self.root_path =  os.path.dirname(self.path)
-		self.raw_path = os.path.join(os.path.dirname(self.root_path),'data','raw','FOB')
+		self.root_path = self.path
+		while os.path.basename(self.root_path) != 'PhD_article_2':
+			self.root_path =  os.path.dirname(self.root_path)
+		self.raw_path = os.path.join(self.root_path,'data','raw','FOB')
 		self.zip_files = self._get_zipfiles()
 		self.DB_file = 'FOB_DB.csv'
 		self.DB = None
