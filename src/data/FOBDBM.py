@@ -136,24 +136,22 @@ class FOBDataBaseManagement():
 		Raises:
 			IndexError: If no more FOB files have to be process.
 		"""
-		#try:
-		add_file = [f for f in self.zip_files if f not in self.DB['file'].unique().tolist()][0]
-		
-		if os.path.splitext(add_file)[0] not in os.listdir(self.raw_path):
-			self.extract_zip(add_file)
+		try:
+			add_file = [f for f in self.zip_files if f not in self.DB['file'].unique().tolist()][0]
 			
-		ls = pd.read_csv(os.path.join(self.raw_path, add_file), usecols=['isin'])['isin'].unique().tolist()
-		DB_tmp = self.fill_empty_DB(self._empty_DB_template(), ls, add_file)
-		print(DB_tmp)
-		self.DB = pd.concat([self.DB, DB_tmp], ignore_index=True)
-		print(self.DB)
-		"""	
+			if os.path.splitext(add_file)[0] not in os.listdir(self.raw_path):
+				self.extract_zip(add_file)
+				
+			ls = pd.read_csv(os.path.join(self.raw_path, add_file), usecols=['isin'])['isin'].unique().tolist()
+			DB_tmp = self.fill_empty_DB(self._empty_DB_template(), ls, add_file)
+			self.DB = pd.concat([self.DB, DB_tmp], ignore_index=True)
+			
 		except Exception as e:
 			print(f'No more FOB file to process: {e}')
 			
 		finally:
 		   print('All remaining FOB files in process or processed')
-		   sys.exit('End of preprocessing task.')"""
+		   sys.exit('End of preprocessing task.')
 		
 	def fill_state_allocate(self, cond, st: str, alloc):
 		"""
@@ -214,13 +212,15 @@ class FOBDataBaseManagement():
 		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
 			
-			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] != None)
+			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] == None)
 
 			if self.DB.empty or self.DB[cond].empty:
 				self.fill_DB()
 				
 			self.file_toprocess, self.isin_toprocess = self.DB[cond].reset_index(drop=True).loc[0, ['file', 'isin']].tolist()
-			
+			print(self.file_toprocess, self.isin_toprocess)
 			fill_cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
 			self.fill_state_allocate(fill_cond, 'In progress', self.job_id)
-			return self.file_toprocess, self.isin_toprocess
+		
+		sys.exit()
+		return self.file_toprocess, self.isin_toprocess
