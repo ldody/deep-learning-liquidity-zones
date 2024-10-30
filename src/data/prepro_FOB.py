@@ -244,12 +244,21 @@ class FOBPreprocessor:
 		self.load_FOB()
 		self.construct_LOB()
 	
+#convert str to bool for argparse
+def str2bool(v):
+	if v.lower() in ('yes', 'true', 't', 'y', '1'):
+		return True
+	elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+		return False
+	else:
+		raise argparse.ArgumentTypeError('Boolean value expected.')
+	
 print('before if')	
 if __name__ == "__main__":
 	#retrieving arguments if any, specify processing way (slurm, parallelism, classic)
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--job_id', type=int, default=0)
-	parser.add_argument('--slurm_array', '-sa', action='store_true', default=False)
+	parser.add_argument('--slurm_array', '-sa', type=str2bool, default=False)
 	args = parser.parse_args([])
 	
 	fobp = FOBPreprocessor(args.job_id)
