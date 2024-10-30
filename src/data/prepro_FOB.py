@@ -6,7 +6,7 @@ import numpy as np
 import argparse
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from FOBDM import FOBDataBaseManagement as fobdm
+from FOBDBM import FOBDataBaseManagement as fobdm
 
 class FOBPreprocessor:
 	"""
