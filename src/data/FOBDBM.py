@@ -204,7 +204,7 @@ class FOBDataBaseManagement():
 			None: This method does not raise error.
 		"""
 		if self.DB_file not in os.listdir(self.path):
-			self.empty_DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
+			self._empty_DB_template().to_csv(os.path.join(self.path, self.DB_file), header=True)
 			
 		with FileLock(os.path.join(self.path, self.DB_file)):
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
