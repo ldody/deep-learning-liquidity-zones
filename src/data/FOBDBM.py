@@ -210,6 +210,7 @@ class FOBDataBaseManagement():
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
 			
 			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] != None)
+			print(self.DB.empty, self.DB, self.DB[cond].empty, self.DB[cond])
 			if self.DB.empty or self.DB[cond].empty:
 				self.fill_DB()
 				
