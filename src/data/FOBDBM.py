@@ -204,12 +204,9 @@ class FOBDataBaseManagement():
 			None: This method does not raise error.
 		"""
 		if self.DB_file not in os.listdir(self.path):
-			print(self._empty_DB_template())
 			self._empty_DB_template().to_csv(os.path.join(self.path, self.DB_file), header=True)
-			print('df =', pd.read_csv(os.path.join(self.path, self.DB_file)))
-			sys.exit()
 			
-		with FileLock(os.path.join(self.path, self.DB_file)):
+		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
 			
 			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'] != None)
