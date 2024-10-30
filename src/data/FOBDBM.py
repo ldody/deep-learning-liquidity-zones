@@ -97,7 +97,7 @@ class FOBDataBaseManagement():
 			zip_ref.extractall(self.raw_path)
 		
 		
-	def fill_empty_DB(self, DB_tmp, ls):
+	def fill_empty_DB(self, DB_tmp, ls, f):
 		"""
 		Fill an empty database dataframe with default information.
 		
@@ -114,7 +114,7 @@ class FOBDataBaseManagement():
 			None: This method does not raise error.
 		"""
 		DB_tmp['isin'] = ls
-		DB_tmp[['file','state','allocate']] = zip_files[0],'Pending',None
+		DB_tmp[['file','state','allocate']] = f,'Pending',None
 		
 		return DB_tmp
 		
@@ -220,7 +220,7 @@ class FOBDataBaseManagement():
 					self.extract_zip(add_file)
 					
 				ls = pd.read_csv(os.path.join(self.raw_path, add_file), usecols=['isin'])['isin'].unique().tolist()
-				DB_tmp = self.fill_empty_DB(self._empty_DB_template(), ls)
+				DB_tmp = self.fill_empty_DB(self._empty_DB_template(), ls, add_file)
 				self.DB = pd.concat([self.DB, DB_tmp], ignore_index=True)
 				sys.exit()
 				self.fill_DB()
