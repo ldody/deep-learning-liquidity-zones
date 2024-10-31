@@ -71,7 +71,7 @@ class FOBPreprocessor:
 			None: This method does not raise error.
 		"""
 		chunk = []
-		for chunk in pd.read_csv(os.path.join(raw_path, os.path.splitext(self.file)[0]), 
+		for chunk in pd.read_csv(os.path.join(self.raw_path, os.path.splitext(self.file)[0]), 
 								header=0, 
 								low_memory=False, 
 								chunksize=10000, 
@@ -147,7 +147,8 @@ class FOBPreprocessor:
 			time = [x for x in time if x > last_t]
 			
 			if not time:
-				sys.exit(f'{self.isin} already processed in {self.file}')
+				print(f'{self.isin} already processed in {self.file}')
+				return 0
 				
 			self.LOB = self.LOB.loc[last_t]
 	
@@ -239,8 +240,8 @@ class FOBPreprocessor:
 		"""
 		self.file, self.isin = self.fobdm.main()
 		date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
-		self.filename_tmp = f'{isin}_{date}_tmp.csv'
-		self.filename = f'{isin}_{date}.csv'
+		self.filename_tmp = f'{self.isin}_{self.date}_tmp.csv'
+		self.filename = f'{self.isin}_{self.date}.csv'
 		self.load_FOB()
 		self.construct_LOB()
 		self.fobdm.terminate()
