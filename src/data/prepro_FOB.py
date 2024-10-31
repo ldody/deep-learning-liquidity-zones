@@ -70,7 +70,7 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		chunk = []
+		chunks = []
 		for chunk in pd.read_csv(os.path.join(self.raw_path, os.path.splitext(self.file)[0]), 
 								header=0, 
 								low_memory=False, 
