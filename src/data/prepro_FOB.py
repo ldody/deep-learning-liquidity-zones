@@ -182,8 +182,7 @@ class FOBPreprocessor:
 						self.LOB = pd.concat((self.LOB, new_line.to_frame().T), ignore_index=True)
 
 					else:
-						print(self.LOB[cond])
-						self.LOB[self.LOB[cond].index, 'size'] += row['order_size']
+						self.LOB.loc[self.LOB[cond].index, 'size'] += row['order_size']
 
 			self.LOB = self.LOB.drop(self.LOB[(self.LOB == 0).any(axis=1)].index)    
 			self.LOB = self.LOB.sort_values(by=['side','price'])
