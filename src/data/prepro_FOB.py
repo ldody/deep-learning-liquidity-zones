@@ -238,11 +238,12 @@ class FOBPreprocessor:
 			None: This method does not raise error.
 		"""
 		self.file, self.isin = self.fobdm.main()
-		date = os.path.splitext(os.path.splitext(file)[0])[0].split('_')[-1]
+		date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
 		self.filename_tmp = f'{isin}_{date}_tmp.csv'
 		self.filename = f'{isin}_{date}.csv'
 		self.load_FOB()
 		self.construct_LOB()
+		self.fobdm.terminate()
 	
 #convert str to bool for argparse
 def str2bool(v):

@@ -188,7 +188,12 @@ class FOBDataBaseManagement():
 		Raises:
 			None: This method does not raise error.
 		"""
-		self.DF.loc[self.DF[cond].index, ['state','allocate']] = 'Terminated', np.nan
+		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
+			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
+			
+			cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
+			self.DB.loc[self.DB[cond].index, ['state','allocate']] = 'Terminated', np.nan
+			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
 	
 	def main(self):
 		"""
