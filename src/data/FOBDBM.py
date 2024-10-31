@@ -222,6 +222,6 @@ class FOBDataBaseManagement():
 			self.file_toprocess, self.isin_toprocess = self.DB[cond].reset_index(drop=True).loc[0, ['file', 'isin']].tolist()
 			fill_cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
 			self.fill_state_allocate(fill_cond, 'In progress', self.job_id)
-			self.CB.to_csv(os.path.join(self.path, self.DB_file), header=True)
+			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
 		
 		return self.file_toprocess, self.isin_toprocess
