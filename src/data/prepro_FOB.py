@@ -157,6 +157,7 @@ class FOBPreprocessor:
 			for _, row in self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')].iterrows():
 
 				cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
+				
 				prev_cond = (self.LOB['price'] == row['previous_price']) & (self.LOB['side'] == row['order_side'])
 
 				if (row['order_event_type'] == 'Reload') | (row['order_event_type'] == 'New'):
@@ -181,6 +182,7 @@ class FOBPreprocessor:
 						self.LOB = pd.concat((self.LOB, new_line.to_frame().T), ignore_index=True)
 
 					else:
+						print(self.LOB[cond])
 						self.LOB[self.LOB[cond].index, 'size'] += row['order_size']
 
 			self.LOB = self.LOB.drop(self.LOB[(self.LOB == 0).any(axis=1)].index)    
