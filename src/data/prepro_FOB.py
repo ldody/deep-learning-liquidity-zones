@@ -136,7 +136,7 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		time = self.FOB['event_time_cet'].sort_values().unique().tolist()[:7]
+		time = self.FOB['event_time_cet'].sort_values().unique().tolist()
 
 		self.LOB = pd.DataFrame(columns=['price', 'size', 'side'])
 		
