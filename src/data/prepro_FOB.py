@@ -240,8 +240,8 @@ class FOBPreprocessor:
 		"""
 		self.file, self.isin = self.fobdm.main()
 		date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
-		self.filename_tmp = f'{self.isin}_{self.date}_tmp.csv'
-		self.filename = f'{self.isin}_{self.date}.csv'
+		self.filename_tmp = f'{self.isin}_{date}_tmp.csv'
+		self.filename = f'{self.isin}_{date}.csv'
 		self.load_FOB()
 		self.construct_LOB()
 		self.fobdm.terminate()
