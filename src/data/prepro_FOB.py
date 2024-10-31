@@ -154,7 +154,7 @@ class FOBPreprocessor:
 	
 		
 		for t in time:
-			for _, row in self.FOB[self.FOB['event_time_cet'] == t].iterrows():
+			for _, row in self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')].iterrows():
 
 				cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
 				prev_cond = (self.LOB['price'] == row['previous_price']) & (self.LOB['side'] == row['order_side'])
@@ -243,6 +243,7 @@ class FOBPreprocessor:
 		self.filename_tmp = f'{self.isin}_{date}_tmp.csv'
 		self.filename = f'{self.isin}_{date}.csv'
 		self.load_FOB()
+		self.shift_orders()
 		self.construct_LOB()
 		self.fobdm.terminate()
 	
