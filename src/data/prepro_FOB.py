@@ -252,13 +252,13 @@ class FOBPreprocessor:
 			pass
 			
 		elif self.filename in os.listdir(self.processed_path):
-			zipfile.ZipFile(self.filename_zip, mode='w').write(self.filename)
+			zipfile.ZipFile(os.path.join(self.processed_path, self.filename_zip), mode='w').write(os.path.join(self.processed_path, self.filename))
 			
 		else:   
 			self.load_FOB()
 			self.shift_orders()
 			self.construct_LOB()
-			zipfile.ZipFile(self.filename_zip, mode='w').write(self.filename)
+			zipfile.ZipFile(os.path.join(self.processed_path, self.filename_zip), mode='w').write(os.path.join(self.processed_path, self.filename))
 			
 		try:
 			os.remove(os.path.join(self.processed_path, self.filename))
