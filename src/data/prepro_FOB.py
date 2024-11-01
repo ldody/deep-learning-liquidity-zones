@@ -30,6 +30,7 @@ class FOBPreprocessor:
 			LOB (DataFrame): LOB DataFrame.
 			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
 			filename (str): Name of the final csv file with LOB dataframe.
+			filename_zip (str): Name of the zip file with the final csv file with LOB dataframe.
 			file (str): Name of the FOB file in process.
 			isin (str): Name of the ISIN in process.
 			
@@ -48,6 +49,7 @@ class FOBPreprocessor:
 		self.LOB = None
 		self.filename_tmp = None
 		self.filename = None
+		self.filename_zip = None
 		self.file = ''
 		self.isin = ''
 		
@@ -229,6 +231,7 @@ class FOBPreprocessor:
 			isin (str): Name of the ISIN in process.
 			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
 			filename (str): Name of the final csv file with LOB dataframe.
+			filename_zip (str): Name of the zip file with the final csv file with LOB dataframe.
 		
 		Args:
 			None: This method does not require args.
@@ -243,9 +246,25 @@ class FOBPreprocessor:
 		date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
 		self.filename_tmp = f'{self.isin}_{date}_tmp.csv'
 		self.filename = f'{self.isin}_{date}.csv'
-		self.load_FOB()
-		self.shift_orders()
-		self.construct_LOB()
+		self.filename_zip = f'{self.filename}.zip'
+		
+		if self.filename_zip in os.listdir(self.processed_path):
+			pass
+			
+		elif self.filename in os.listdir(self.processed_path):
+			zipfile.ZipFile(self.filename_zip, mode='w').write(self.filename)
+			
+		else:   
+			self.load_FOB()
+			self.shift_orders()
+			self.construct_LOB()
+			zipfile.ZipFile(self.filename_zip, mode='w').write(self.filename)
+			
+		try:
+			os.remove(os.path.join(self.processed_path, self.filename))
+		except:
+			print('csv file removed.')
+		
 		self.fobdm.terminate()
 	
 #convert str to bool for argparse
