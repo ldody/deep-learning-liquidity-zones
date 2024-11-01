@@ -194,6 +194,29 @@ class FOBDataBaseManagement():
 			cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
 			self.DB.loc[self.DB[cond].index, ['state','allocate']] = 'Processed', np.nan
 			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
+			
+	def reinit(self):
+		"""
+		Reinitialize the database allocation if error during process (slurm or other).
+		
+		Attributes:
+			DB (DataFrame): Reinit database DataFrame "allocate" column. 
+			
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
+		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
+			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
+			
+			self.DB['allocate'] = np.nan
+			
+			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
 	
 	def main(self):
 		"""
@@ -230,3 +253,25 @@ class FOBDataBaseManagement():
 			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
 		
 		return self.file_toprocess, self.isin_toprocess
+		
+
+#convert str to bool for argparse
+def str2bool(v):
+	if v.lower() in ('yes', 'true', 't', 'y', '1'):
+		return True
+	elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+		return False
+	else:
+		raise argparse.ArgumentTypeError('Boolean value expected.')
+		
+		
+if __name__ == "__main__":
+	#retrieving arguments if any
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--reinit', type=str2bool, default=False)
+	args = parser.parse_args()
+
+	fobdbm = FOBDataBaseManagement()
+
+	if args.reinit:
+		fobdbm.reinit()
