@@ -186,10 +186,9 @@ class FOBPreprocessor:
 					else:
 						self.LOB.loc[self.LOB[cond].index, 'size'] += row['order_size']
 						
-				try:
+				if len(self.LOB[cond]) != 0:
 					if self.LOB.loc[self.LOB[cond].index, 'size'] < 0:
 						print(row, self.LOB[cond], self.isin, self.date)
-				except:pass
 
 			self.LOB = self.LOB.drop(self.LOB[(self.LOB == 0).any(axis=1)].index)    
 			self.LOB = self.LOB.sort_values(by=['side','price'])
@@ -219,7 +218,7 @@ class FOBPreprocessor:
 		"""
 		if state == 'tmp':
 			if self.filename_tmp not in os.listdir(self.processed_path):
-				self.LOB.to_parquet(os.path.join(self.processed_path, self.filename_tmp))
+				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, append=False)
 			else:
 				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, append=True)
 				
