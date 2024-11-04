@@ -186,9 +186,9 @@ class FOBPreprocessor:
 					else:
 						self.LOB.loc[self.LOB[cond].index, 'size'] += row['order_size']
 						
-				if len(self.LOB[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])]) != 0:
-					if self.LOB.loc[self.LOB[cond].index, 'size'] < 0:
-						print(row, self.LOB[cond], self.isin, self.date)
+				if len(self.LOB[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])]) == 0:
+					if self.LOB.loc[self.LOB[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])].index, 'size'] < 0:
+						print(row, self.LOB[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])], self.isin, self.date)
 
 			self.LOB = self.LOB.drop(self.LOB[(self.LOB == 0).any(axis=1)].index)    
 			self.LOB = self.LOB.sort_values(by=['side','price'])
