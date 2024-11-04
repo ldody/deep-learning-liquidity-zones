@@ -143,7 +143,7 @@ class FOBPreprocessor:
 		self.LOB = pd.DataFrame(columns=['price', 'size', 'side'])
 		
 		if self.filename_tmp in os.listdir(self.processed_path):
-			self.LOB = pd.read_parquet(os.path.join(self.processed_path, self.filename_tmp), header=0, index_col=0)
+			self.LOB = pd.read_parquet(os.path.join(self.processed_path, self.filename_tmp))
 			self.LOB.index = pd.to_datetime(self.LOB.index)
 			last_t = pd.to_datetime(self.LOB[-1:].index)
 			time = [x for x in time if x > last_t]
