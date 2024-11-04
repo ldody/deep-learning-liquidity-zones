@@ -319,7 +319,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--job_id', type=int, default=0)
 	parser.add_argument('--slurm_array', '-sa', type=str2bool, default=False)
-	parser.add_argument('--convert', '-sa', type=str2bool, default=False)
+	parser.add_argument('--convert', '-c', type=str2bool, default=False)
 	args = parser.parse_args()
 	
 	fobp = FOBPreprocessor(args.job_id)    
