@@ -186,7 +186,7 @@ class FOBPreprocessor:
 					else:
 						self.LOB.loc[self.LOB[cond].index, 'size'] += row['order_size']
 						
-				if len(self.LOB[cond]) != 0:
+				if len(self.LOB[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])]) != 0:
 					if self.LOB.loc[self.LOB[cond].index, 'size'] < 0:
 						print(row, self.LOB[cond], self.isin, self.date)
 
