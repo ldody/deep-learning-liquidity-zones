@@ -221,6 +221,41 @@ class FOBPreprocessor:
 				
 		if state == 'def':
 			os.rename(os.path.join(self.processed_path, self.filename_tmp), os.path.join(self.processed_path, self.filename))
+			
+	def csv_to_parquet(self):
+		"""
+		Convert all csv files to parquet format.
+		
+		Attributes:
+			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
+		
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
+		ls_files = os.listdir(self.processed_path)
+		# .csv.zip to .parquet.gzip
+		for file in [f for f in ls_files if os.path.splitext(f)[1] == '.zip']:
+			new_filename = file.split('.')[0] + '.parquet.gzip'
+			with zipfile.ZipFile(os.path.join(self.processed_path, file), "r") as zip_file:
+				
+				with zip_file.open(zip_file.namelist()[0]) as csv_file:
+					df = pd.read_csv(csv_file, index_col=0)
+			
+			df.to_parquet(os.path.join(self.processed_path, new_filename), compression='GZIP')
+			os.remove(os.path.join(self.processed_path, file))
+			
+		# .csv to .parquet
+		for file in [f for f in ls_files if os.path.splitext(f)[1] == '.csv']:
+			new_filename = file.split('.')[0] + '.parquet'
+			df = pd.read_csv(os.path.join(self.processed_path, file, index_col=0)
+			df.to_parquet(os.path.join(self.processed_path, new_filename))
+			os.remove(os.path.join(self.processed_path, file))
 	
 	def array_process(self):
 		"""
@@ -232,6 +267,7 @@ class FOBPreprocessor:
 			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
 			filename (str): Name of the final csv file with LOB dataframe.
 			filename_zip (str): Name of the zip file with the final csv file with LOB dataframe.
+			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
 		
 		Args:
 			None: This method does not require args.
@@ -245,7 +281,7 @@ class FOBPreprocessor:
 		self.file, self.isin = self.fobdm.main()
 		date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
 		self.filename_tmp = f'{self.isin}_{date}_tmp.csv'
-		self.filename = f'{self.isin}_{date}.csv'
+		self.filename_gzip = f'{self.isin}_{date}.parquet.gzip'
 		self.filename_zip = f'{self.filename}.zip'
 		
 		if self.filename_zip in os.listdir(self.processed_path):
@@ -282,9 +318,15 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--job_id', type=int, default=0)
 	parser.add_argument('--slurm_array', '-sa', type=str2bool, default=False)
+	parser.add_argument('--convert', '-sa', type=str2bool, default=False)
 	args = parser.parse_args()
 	
-	fobp = FOBPreprocessor(args.job_id)
+	fobp = FOBPreprocessor(args.job_id)    
+	
+	if args.convert:
+		fobp.csv_to_parquet()
+		sys.exit('End of conversion')
+
 
 	if args.slurm_array:
 		fobp.array_process()

@@ -16,5 +16,6 @@ module load Python/3.10.4-GCCcore-12.2.0
 source /home_nfs/polytech/leo.dody/PhD/Article_2/PhD_article_2/.venv/bin/activate
 
 python3 ../src/data/FOBDBM.py --reinit True
+python3 ../src/data/prepro_FOB.py --convert True
 
 deactivate

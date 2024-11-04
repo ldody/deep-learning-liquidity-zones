@@ -4,3 +4,4 @@ filelock
 tensorflow
 scikit-learn
 matplotlib
+pyarrow
