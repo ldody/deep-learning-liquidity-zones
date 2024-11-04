@@ -8,7 +8,7 @@
 #SBATCH --output=FOB_prepro_%a.out
 #SBATCH --job-name=FOB_prepro_%A_%a
 #SBATCH --partition=c6420-ib100
-#SBATCH --array=0-500%100
+#SBATCH --array=0-500%20
 
 
 module purge

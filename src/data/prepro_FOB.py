@@ -29,9 +29,8 @@ class FOBPreprocessor:
 			fobdm (Class): Class from the FOB database management.
 			FOB (DataFrame): FOB DataFrame.
 			LOB (DataFrame): LOB DataFrame.
-			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
-			filename (str): Name of the final csv file with LOB dataframe.
-			filename_zip (str): Name of the zip file with the final csv file with LOB dataframe.
+			filename_tmp (str): Name of the temporary parquet file with LOB dataframe.
+			filename_zip (str): Name of the gzip file with the final parquet file with LOB dataframe.
 			file (str): Name of the FOB file in process.
 			isin (str): Name of the ISIN in process.
 			
@@ -202,7 +201,6 @@ class FOBPreprocessor:
 		Attributes:
 			LOB (DataFrame): LOB DataFrame.
 			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
-			filename (str): Name of the final csv file with LOB dataframe.
 			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/ where the LOB is saved.
 			
 		Args:
@@ -216,47 +214,15 @@ class FOBPreprocessor:
 		"""
 		if state == 'tmp':
 			if self.filename_tmp not in os.listdir(self.processed_path):
-				self.LOB.to_csv(os.path.join(self.processed_path, self.filename_tmp), index=True)
+				self.LOB.to_parquet(os.path.join(self.processed_path, self.filename_tmp))
 			else:
-				self.LOB.to_csv(os.path.join(self.processed_path, self.filename_tmp), mode='a', header=False, index=True)
+				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, append=True)
 				
 		if state == 'def':
-			os.rename(os.path.join(self.processed_path, self.filename_tmp), os.path.join(self.processed_path, self.filename))
+			df = pd.read_parquet(os.path.join(self.processed_path, self.filename_tmp))
+			df.to_parquet(os.path.join(self.processed_path, self.filename_gzip), compression='GZIP')
 			
-	def csv_to_parquet(self):
-		"""
-		Convert all csv files to parquet format.
-		
-		Attributes:
-			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
-		
-		Args:
-			None: This method does not require args.
-
-		Returns:
-			None: This method does not return anything.
-		
-		Raises:
-			None: This method does not raise error.
-		"""
-		ls_files = os.listdir(self.processed_path)
-		# .csv.zip to .parquet.gzip
-		for file in [f for f in ls_files if os.path.splitext(f)[1] == '.zip']:
-			new_filename = file.split('.')[0] + '.parquet.gzip'
-			with zipfile.ZipFile(os.path.join(self.processed_path, file), "r") as zip_file:
-				
-				with zip_file.open(zip_file.namelist()[0]) as csv_file:
-					df = pd.read_csv(csv_file, index_col=0)
-			
-			df.to_parquet(os.path.join(self.processed_path, new_filename), compression='GZIP')
-			os.remove(os.path.join(self.processed_path, file))
-			
-		# .csv to .parquet
-		for file in [f for f in ls_files if os.path.splitext(f)[1] == '.csv']:
-			new_filename = file.split('.')[0] + '.parquet'
-			df = pd.read_csv(os.path.join(self.processed_path, file), index_col=0)
-			df.to_parquet(os.path.join(self.processed_path, new_filename))
-			os.remove(os.path.join(self.processed_path, file))
+			os.remove(os.path.join(self.processed_path, self.filename_tmp))
 	
 	def array_process(self):
 		"""
@@ -266,7 +232,6 @@ class FOBPreprocessor:
 			file (str): Name of the FOB file in process.
 			isin (str): Name of the ISIN in process.
 			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
-			filename (str): Name of the final csv file with LOB dataframe.
 			filename_zip (str): Name of the zip file with the final csv file with LOB dataframe.
 			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
 		
@@ -281,26 +246,16 @@ class FOBPreprocessor:
 		"""
 		self.file, self.isin = self.fobdm.main()
 		date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
-		self.filename_tmp = f'{self.isin}_{date}_tmp.csv'
-		self.filename_gzip = f'{self.isin}_{date}.parquet.gzip'
-		self.filename_zip = f'{self.filename}.zip'
+		self.filename_tmp = f'{self.isin}_{date}_tmp.parquet'
+		self.filename_zip = f'{self.isin}_{date}.parquet.gzip'
 		
 		if self.filename_zip in os.listdir(self.processed_path):
 			pass
-			
-		elif self.filename in os.listdir(self.processed_path):
-			zipfile.ZipFile(os.path.join(self.processed_path, self.filename_zip), mode='w').write(os.path.join(self.processed_path, self.filename))
 			
 		else:   
 			self.load_FOB()
 			self.shift_orders()
 			self.construct_LOB()
-			zipfile.ZipFile(os.path.join(self.processed_path, self.filename_zip), mode='w').write(os.path.join(self.processed_path, self.filename))
-			
-		try:
-			os.remove(os.path.join(self.processed_path, self.filename))
-		except:
-			print('csv file removed.')
 		
 		self.fobdm.terminate()
 	
