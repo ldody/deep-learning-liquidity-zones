@@ -185,6 +185,9 @@ class FOBPreprocessor:
 
 					else:
 						self.LOB.loc[self.LOB[cond].index, 'size'] += row['order_size']
+						
+				if self.LOB.load_FOB[self.LOB[cond].index, 'size'] < 0:
+					print(row, self.LOB[cond], self.isin, self.date)
 
 			self.LOB = self.LOB.drop(self.LOB[(self.LOB == 0).any(axis=1)].index)    
 			self.LOB = self.LOB.sort_values(by=['side','price'])
