@@ -89,7 +89,7 @@ class FOBPreprocessor:
 										'time_in_force', 
 										'trade_size', 
 										'trade_price']):
-			chunk = chunk[chunk['isin'] == self.isin]
+			chunk = chunk[(chunk['isin'] == self.isin) & (chunk['time_in_force'] == 0)]
 
 			chunk['event_time_cet'] = pd.to_datetime(chunk['event_date'] + ' ' + chunk['event_time_cet'])
 			chunk = chunk.drop(columns=['event_date'])
@@ -187,7 +187,7 @@ class FOBPreprocessor:
 						self.LOB.loc[self.LOB[cond].index, 'size'] += row['order_size']
 						
 				if len(self.LOB[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])]) == 1:
-					if self.LOB.loc[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side']), 'size'][0] < 0:
+					if self.LOB.loc[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side']), 'size'].tolist()[0] < 0:
 						print(row, self.LOB[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])], self.isin, t)
 
 			self.LOB = self.LOB.drop(self.LOB[(self.LOB == 0).any(axis=1)].index)    
