@@ -254,7 +254,7 @@ class FOBPreprocessor:
 		# .csv to .parquet
 		for file in [f for f in ls_files if os.path.splitext(f)[1] == '.csv']:
 			new_filename = file.split('.')[0] + '.parquet'
-			df = pd.read_csv(os.path.join(self.processed_path, file, index_col=0)
+			df = pd.read_csv(os.path.join(self.processed_path, file), index_col=0)
 			df.to_parquet(os.path.join(self.processed_path, new_filename))
 			os.remove(os.path.join(self.processed_path, file))
 	
