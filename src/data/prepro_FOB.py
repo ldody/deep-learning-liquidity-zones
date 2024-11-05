@@ -89,7 +89,7 @@ class FOBPreprocessor:
 										'time_in_force', 
 										'trade_size', 
 										'trade_price']):
-			chunk = chunk[(chunk['isin'] == self.isin) & (chunk['time_in_force'] == 0)]
+			chunk = chunk[(chunk['isin'] == self.isin)]
 
 			chunk['event_time_cet'] = pd.to_datetime(chunk['event_date'] + ' ' + chunk['event_time_cet'])
 			chunk = chunk.drop(columns=['event_date'])
@@ -155,12 +155,12 @@ class FOBPreprocessor:
 			self.LOB = self.LOB.loc[last_t]
 	
 		
-		for t in time:
+		for t in time[:500]:
 			for _, row in self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')].iterrows():
 
 				cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
 				
-				prev_cond = (self.LOB['price'] == row['previous_price']) & (self.LOB['side'] == row['order_side'])
+				prev_cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
 
 				if (row['order_event_type'] == 'Reload') | (row['order_event_type'] == 'New'):
 
@@ -169,28 +169,28 @@ class FOBPreprocessor:
 						self.LOB = pd.concat((self.LOB, new_line.to_frame().T), ignore_index=True)
 
 					else:
-						self.LOB.loc[self.LOB[cond].index, 'size'] += row['order_size']
+						self.LOB.loc[cond, 'size'] += row['order_size']
 
 				elif row['order_event_type'] == 'Fill':
 
-					self.LOB.loc[self.LOB[cond].index, 'size'] -= row['trade_size']
+					self.LOB.loc[cond, 'size'] -= row['trade_size']
+				
+				elif row['order_event_type'] == 'Cancel':
+					
+					self.LOB.loc[prev_cond, 'size'] -= row['previous_size']
+				
+				elif row['order_event_type'] == 'Modify':
 
-				elif (row['order_event_type'] == 'Modify') | (row['order_event_type'] == 'Cancel'):
-
-					self.LOB.loc[self.LOB[prev_cond].index, 'size'] -= row['previous_size']
+					self.LOB.loc[prev_cond, 'size'] -= row['previous_size']
 
 					if len(self.LOB[cond]) == 0:
 						new_line = pd.Series([row['order_price'], row['order_size'], row['order_side']], index=self.LOB.columns.tolist())
 						self.LOB = pd.concat((self.LOB, new_line.to_frame().T), ignore_index=True)
 
 					else:
-						self.LOB.loc[self.LOB[cond].index, 'size'] += row['order_size']
-						
-				if len(self.LOB[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])]) == 1:
-					if self.LOB.loc[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side']), 'size'].tolist()[0] < 0:
-						print(row, self.LOB[(self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])], self.isin, t)
+						self.LOB.loc[cond, 'size'] += row['order_size']
 
-			self.LOB = self.LOB.drop(self.LOB[(self.LOB == 0).any(axis=1)].index)    
+			self.LOB = self.LOB.loc[self.LOB['size'] != 0]    
 			self.LOB = self.LOB.sort_values(by=['side','price'])
 			self.LOB.index = pd.Index([t] * len(self.LOB))
 			
@@ -224,7 +224,7 @@ class FOBPreprocessor:
 				
 		if state == 'def':
 			df = pd.read_parquet(os.path.join(self.processed_path, self.filename_tmp))
-			df.to_parquet(os.path.join(self.processed_path, self.filename_gzip), compression='GZIP')
+			df.to_parquet(os.path.join(self.processed_path, self.filename_zip), compression='GZIP')
 			
 			os.remove(os.path.join(self.processed_path, self.filename_tmp))
 	
