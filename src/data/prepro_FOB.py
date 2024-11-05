@@ -155,7 +155,7 @@ class FOBPreprocessor:
 			self.LOB = self.LOB.loc[last_t]
 	
 		
-		for t in time[:500]:
+		for t in time:
 			for _, row in self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')].iterrows():
 
 				cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
