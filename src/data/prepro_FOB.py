@@ -145,7 +145,13 @@ class FOBPreprocessor:
 		if self.filename_tmp in os.listdir(self.processed_path):
 			self.LOB = pd.read_parquet(os.path.join(self.processed_path, self.filename_tmp))
 			self.LOB.index = pd.to_datetime(self.LOB.index)
-			last_t = pd.to_datetime(self.LOB[-1:].index)
+			ls_t = pd.to_datetime(self.LOB.index.unique().tolist())
+			
+			for t in reversed(ls_t):
+				if t in time:
+					last_t = t
+					break
+					
 			time = [x for x in time if x > last_t]
 			
 			if not time:
@@ -155,7 +161,7 @@ class FOBPreprocessor:
 			self.LOB = self.LOB.loc[last_t]
 	
 		
-		for t in time:
+		for t in time[:1718]:
 			for _, row in self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')].iterrows():
 
 				cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
