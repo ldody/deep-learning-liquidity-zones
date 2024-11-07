@@ -229,7 +229,7 @@ class FOBPreprocessor:
 				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, append=True)
 				
 		if state == 'def':			
-			os.rename(os.path.join(self.processed_path, self.filename_tmp), os.path.join(self.processed_path, self.filename_zip)
+			os.rename(os.path.join(self.processed_path, self.filename_tmp), os.path.join(self.processed_path, self.filename_zip))
 	
 	def array_process(self):
 		"""
