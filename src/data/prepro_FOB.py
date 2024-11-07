@@ -161,7 +161,7 @@ class FOBPreprocessor:
 			self.LOB = self.LOB.loc[last_t]
 	
 		
-		for t in time[:1718]:
+		for t in time:
 			for _, row in self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')].iterrows():
 
 				cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
@@ -228,11 +228,8 @@ class FOBPreprocessor:
 			else:
 				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, append=True)
 				
-		if state == 'def':
-			df = pd.read_parquet(os.path.join(self.processed_path, self.filename_tmp))
-			df.to_parquet(os.path.join(self.processed_path, self.filename_zip), compression='GZIP')
-			
-			os.remove(os.path.join(self.processed_path, self.filename_tmp))
+		if state == 'def':			
+			os.rename(os.path.join(self.processed_path, self.filename_tmp), os.path.join(self.processed_path, self.filename_zip)
 	
 	def array_process(self):
 		"""
@@ -256,7 +253,7 @@ class FOBPreprocessor:
 		"""
 		self.file, self.isin = self.fobdm.main()
 		date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
-		self.filename_tmp = f'{self.isin}_{date}_tmp.parquet'
+		self.filename_tmp = f'{self.isin}_{date}_tmp.parquet.gzip'
 		self.filename_zip = f'{self.isin}_{date}.parquet.gzip'
 		
 		if self.filename_zip in os.listdir(self.processed_path):
