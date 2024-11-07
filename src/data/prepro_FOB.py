@@ -166,7 +166,7 @@ class FOBPreprocessor:
 
 				cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
 				
-				prev_cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
+				prev_cond = (self.LOB['price'] == row['previous_price']) & (self.LOB['side'] == row['order_side'])
 
 				if (row['order_event_type'] == 'Reload') | (row['order_event_type'] == 'New'):
 
