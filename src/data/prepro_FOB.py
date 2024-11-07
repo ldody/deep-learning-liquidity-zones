@@ -224,9 +224,9 @@ class FOBPreprocessor:
 		"""
 		if state == 'tmp':
 			if self.filename_tmp not in os.listdir(self.processed_path):
-				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, append=False)
+				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, compression='GZIP', append=False)
 			else:
-				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, append=True)
+				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, compression='GZIP', append=True)
 				
 		if state == 'def':			
 			os.rename(os.path.join(self.processed_path, self.filename_tmp), os.path.join(self.processed_path, self.filename_zip))
