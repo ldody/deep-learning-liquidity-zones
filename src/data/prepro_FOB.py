@@ -96,6 +96,7 @@ class FOBPreprocessor:
 			chunks.append(chunk)
 			
 		self.FOB = pd.concat(chunks)
+		self.FOB[['previous_size', 'previous_price']] = self.FOB[['trade_size', 'order_price']]
 	
 	def shift_orders(self):
 		"""
@@ -162,27 +163,25 @@ class FOBPreprocessor:
 	
 		
 		for t in time:
+			self.LOB = self.LOB.reset_index(drop=True)
 			tmp = self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')]
 			
 			# Reload and new order + Modify (add volume)
-			tmp_add = tmp.loc[tmp['order_size'] > 0 , ['order_price', 'order_size', 'order_side']]
-			tmp_add.columns = ['price', 'size', 'side']
-			tmp_add = tmp_add.groupby(['price', 'side'], as_index=False).sum()
-			self.LOB = pd.concat([self.LOB, tmp_add]).groupby(['price', 'side'], as_index=False).sum()
+			tmp_add = tmp[['order_price', 'order_size', 'order_side']]
+	
+			if len(tmp_add) != 0:
+				tmp_add.columns = ['price', 'size', 'side']
+				tmp_add = tmp_add.groupby(['price', 'side'], as_index=False).sum()
+				self.LOB = pd.concat([self.LOB, tmp_add]).groupby(['price', 'side'], as_index=False).sum()
 			
-			# Cancel and modify order (subtract volume)
-			tmp_sub = tmp.loc[tmp['previous_size'] > 0 , ['previous_price', 'previous_size', 'order_side']]
-			tmp_sub.columns = ['price', 'size', 'side']
-			tmp_sub = tmp_sub.groupby(['price', 'side'], as_index=False).sum()
-			tmp_sub['size'] = tmp_sub['size'] * -1
-			self.LOB = pd.concat([self.LOB, tmp_sub]).groupby(['price', 'side'], as_index=False).sum()
-			
-			# Fill order (subtract volume)
-			tmp_sub = tmp.loc[tmp['trade_size'] > 0 , ['trade_price', 'trade_size', 'order_side']]
-			tmp_sub.columns = ['price', 'size', 'side']
-			tmp_sub = tmp_sub.groupby(['price', 'side'], as_index=False).sum()
-			tmp_sub['size'] = tmp_sub['size'] * -1
-			self.LOB = pd.concat([self.LOB, tmp_sub]).groupby(['price', 'side'], as_index=False).sum()
+			# Cancel, fill and modify order (subtract volume)
+			tmp_sub = tmp[['previous_price', 'previous_size', 'order_side']]
+	
+			if len(tmp_sub) != 0:
+				tmp_sub.columns = ['price', 'size', 'side']
+				tmp_sub = tmp_sub.groupby(['price', 'side'], as_index=False).sum()
+				tmp_sub['size'] = tmp_sub['size'] * -1
+				self.LOB = pd.concat([self.LOB, tmp_sub]).groupby(['price', 'side'], as_index=False).sum()
 			
 
 			self.LOB = self.LOB.loc[self.LOB['size'] != 0]    
