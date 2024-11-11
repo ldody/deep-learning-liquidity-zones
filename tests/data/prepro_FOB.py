@@ -162,28 +162,39 @@ class FOBPreprocessor:
 	
 		
 		for t in time:
-			tmp = self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')]
-			
-			# Reload and new order + Modify (add volume)
-			tmp_add = tmp.loc[tmp['order_size'] > 0 , ['order_price', 'order_size', 'order_side']]
-			tmp_add.columns = ['price', 'size', 'side']
-			tmp_add = tmp_add.groupby(['price', 'side'], as_index=False).sum()
-			self.LOB = pd.concat([self.LOB, tmp_add]).groupby(['price', 'side'], as_index=False).sum()
-			
-			# Cancel and modify order (subtract volume)
-			tmp_sub = tmp.loc[tmp['previous_size'] > 0 , ['previous_price', 'previous_size', 'order_side']]
-			tmp_sub.columns = ['price', 'size', 'side']
-			tmp_sub = tmp_sub.groupby(['price', 'side'], as_index=False).sum()
-			tmp_sub['size'] = tmp_sub['size'] * -1
-			self.LOB = pd.concat([self.LOB, tmp_sub]).groupby(['price', 'side'], as_index=False).sum()
-			
-			# Fill order (subtract volume)
-			tmp_sub = tmp.loc[tmp['trade_size'] > 0 , ['trade_price', 'trade_size', 'order_side']]
-			tmp_sub.columns = ['price', 'size', 'side']
-			tmp_sub = tmp_sub.groupby(['price', 'side'], as_index=False).sum()
-			tmp_sub['size'] = tmp_sub['size'] * -1
-			self.LOB = pd.concat([self.LOB, tmp_sub]).groupby(['price', 'side'], as_index=False).sum()
-			
+			for _, row in self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')].iterrows():
+
+				cond = (self.LOB['price'] == row['order_price']) & (self.LOB['side'] == row['order_side'])
+				
+				prev_cond = (self.LOB['price'] == row['previous_price']) & (self.LOB['side'] == row['order_side'])
+
+				if (row['order_event_type'] == 'Reload') | (row['order_event_type'] == 'New'):
+
+					if len(self.LOB[cond]) == 0:
+						new_line = pd.Series([row['order_price'], row['order_size'], row['order_side']], index=self.LOB.columns.tolist())
+						self.LOB = pd.concat((self.LOB, new_line.to_frame().T), ignore_index=True)
+
+					else:
+						self.LOB.loc[cond, 'size'] += row['order_size']
+
+				elif row['order_event_type'] == 'Fill':
+
+					self.LOB.loc[cond, 'size'] -= row['trade_size']
+				
+				elif row['order_event_type'] == 'Cancel':
+					
+					self.LOB.loc[prev_cond, 'size'] -= row['previous_size']
+				
+				elif row['order_event_type'] == 'Modify':
+
+					self.LOB.loc[prev_cond, 'size'] -= row['previous_size']
+
+					if len(self.LOB[cond]) == 0:
+						new_line = pd.Series([row['order_price'], row['order_size'], row['order_side']], index=self.LOB.columns.tolist())
+						self.LOB = pd.concat((self.LOB, new_line.to_frame().T), ignore_index=True)
+
+					else:
+						self.LOB.loc[cond, 'size'] += row['order_size']
 
 			self.LOB = self.LOB.loc[self.LOB['size'] != 0]    
 			self.LOB = self.LOB.sort_values(by=['side','price'])
