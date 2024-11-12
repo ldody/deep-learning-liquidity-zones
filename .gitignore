@@ -3,3 +3,4 @@
 .ipynb_checkpoints
 /.venv/
 /notebooks
+src/data/FOB_DB.csv

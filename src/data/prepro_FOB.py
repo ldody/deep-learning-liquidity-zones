@@ -202,7 +202,7 @@ class FOBPreprocessor:
 			self.save_LOB(state='tmp')
 			
 			if (self.LOB['size'] < 0).any():
-				sys.exit('Error: Negative values in LOB')
+				print('Negative value in FOB:', self.LOB[self.LOB['size'] < 0])
 		
 		self.save_LOB(state='def')
 		
