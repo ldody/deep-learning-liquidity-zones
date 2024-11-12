@@ -196,6 +196,9 @@ class FOBPreprocessor:
 			self.LOB.index = pd.Index([t] * len(self.LOB))
 			
 			self.save_LOB(state='tmp')
+			
+			if (self.LOB['size'] < 0).any():
+				sys.exit('Error: Negative values in LOB')
 		
 		self.save_LOB(state='def')
 		
