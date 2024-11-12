@@ -164,7 +164,7 @@ class FOBPreprocessor:
 				
 			self.LOB = self.LOB.loc[last_t]
 	
-		for t, block in FOB.groupby('event_time_cet'):
+		for t, block in self.FOB.groupby('event_time_cet'):
 			if t in ls_t:
 				continue
 			
