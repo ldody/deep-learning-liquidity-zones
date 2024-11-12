@@ -119,6 +119,8 @@ class FOBPreprocessor:
 		mask = self.FOB['order_id'].isin(ls_id)
 		self.FOB.loc[mask, 'previous_price'] = self.FOB.loc[mask].groupby('order_id')['order_price'].shift(1)
 		self.FOB.loc[mask, 'previous_size'] = self.FOB.loc[mask].groupby('order_id')['order_size'].shift(1)
+		
+		self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'previous_size'] = self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'trade_size']
 	
 	def construct_LOB(self):
 		"""
@@ -140,6 +142,7 @@ class FOBPreprocessor:
 			None: This method does not raise error.
 		"""
 		time = self.FOB['event_time_cet'].sort_values().unique().tolist()
+		lentime = len(time)
 
 		self.LOB = pd.DataFrame(columns=['price', 'size', 'side'])
 		
@@ -161,31 +164,35 @@ class FOBPreprocessor:
 				
 			self.LOB = self.LOB.loc[last_t]
 	
-		
-		for t in time:
+		for t, block in FOB.groupby('event_time_cet'):
+			if t in ls_t:
+				continue
+			
+			if time.index(pd.to_datetime(t)) % 500 == 0:
+				print(f'{time.index(pd.to_datetime(t))} / {lentime}')
+			
 			self.LOB = self.LOB.reset_index(drop=True)
-			tmp = self.FOB[(self.FOB['event_time_cet'] == t) & (self.FOB['order_type'] == 'Limit')]
+			ls = [self.LOB]
 			
 			# Reload and new order + Modify (add volume)
-			tmp_add = tmp[['order_price', 'order_size', 'order_side']]
-	
+			tmp_add = block[['order_price', 'order_size', 'order_side']]
+			
 			if len(tmp_add) != 0:
 				tmp_add.columns = ['price', 'size', 'side']
 				tmp_add = tmp_add.groupby(['price', 'side'], as_index=False).sum()
-				self.LOB = pd.concat([self.LOB, tmp_add]).groupby(['price', 'side'], as_index=False).sum()
+				ls.append(tmp_add)
 			
 			# Cancel, fill and modify order (subtract volume)
-			tmp_sub = tmp[['previous_price', 'previous_size', 'order_side']]
-	
+			tmp_sub = block[['previous_price', 'previous_size', 'order_side']]
+			
 			if len(tmp_sub) != 0:
 				tmp_sub.columns = ['price', 'size', 'side']
 				tmp_sub = tmp_sub.groupby(['price', 'side'], as_index=False).sum()
 				tmp_sub['size'] = tmp_sub['size'] * -1
-				self.LOB = pd.concat([self.LOB, tmp_sub]).groupby(['price', 'side'], as_index=False).sum()
+				ls.append(tmp_sub)
 			
-
-			self.LOB = self.LOB.loc[self.LOB['size'] != 0]    
-			self.LOB = self.LOB.sort_values(by=['side','price'])
+			self.LOB = pd.concat(ls).groupby(['price', 'side'], as_index=False).sum()
+			self.LOB = self.LOB[self.LOB['size'] != 0]
 			self.LOB.index = pd.Index([t] * len(self.LOB))
 			
 			self.save_LOB(state='tmp')
