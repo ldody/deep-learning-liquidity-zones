@@ -165,8 +165,12 @@ class FOBPreprocessor:
 			self.LOB = self.LOB.loc[last_t]
 	
 		for t, block in self.FOB.groupby('event_time_cet'):
-			if t in ls_t:
-				continue
+			
+			try:
+				if t in ls_t:
+					continue
+			except:
+				pass
 			
 			if time.index(pd.to_datetime(t)) % 500 == 0:
 				print(f'{time.index(pd.to_datetime(t))} / {lentime}')
