@@ -124,7 +124,7 @@ class FOBPreprocessor:
 		
 		self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'previous_size'] = self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'trade_size']
 	
-	def resample_FOB_LOB(self, price: str, size: str, to_add: bool = False):
+	def resample_FOB_LOB(self, data, price: str, size: str, to_add: bool = True):
 		"""
 		Resample the FOB for add/subtract sizes.
 		
@@ -141,7 +141,7 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		resample_df = self.FOB.copy()
+		resample_df = data.copy()
 		
 		resample_df = resample_df.loc[resample_df['order_type'] == 'Limit', ['event_time_cet', 'order_side'] + [price, size]]
 		
@@ -149,7 +149,7 @@ class FOBPreprocessor:
 		
 		if to_add == False:
 			resample_df[size] *= -1
-		
+
 		resample_df.set_index('event_time_cet', inplace=True)
 		resample_df = resample_df.groupby(['order_side', price]).resample(self.resampling_unit).sum()[size].to_frame()
 
@@ -179,10 +179,11 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		LOB_add = self.resample_FOB_LOB(price='order_price', size='order_size')
-		LOB_sub = self.resample_FOB_LOB(price='order_price', size='order_size', to_add=False)
-		resamp_FOB_LOB = pd.concat([FOB_add, FOB_sub], ignore_index=True).groupby(['event_time_cet', 'side', 'price'], as_index=False).sum()
-		resamp_FOB_LOB = resamp_FOB_LOB[resamp_FOB['size'] != 0]
+		LOB_add = self.resample_FOB_LOB(data=self.FOB, price='order_price', size='order_size')
+		LOB_sub = self.resample_FOB_LOB(data=self.FOB, price='previous_price', size='previous_size', to_add=False)
+		resamp_FOB_LOB = pd.concat([LOB_add, LOB_sub], ignore_index=True).groupby(['event_time_cet', 'side', 'price'], as_index=False).sum()
+		resamp_FOB_LOB = resamp_FOB_LOB[resamp_FOB_LOB['size'] != 0]
+		print(resamp_FOB_LOB)
 		
 		time = resamp_FOB_LOB['event_time_cet'].sort_values().unique().tolist()
 		lentime = len(time)
@@ -206,32 +207,37 @@ class FOBPreprocessor:
 				return 0
 				
 			self.LOB = self.LOB.loc[last_t]
+			
+		else:
+			ls_t = False
 	
 		for t, block in resamp_FOB_LOB.groupby('event_time_cet'):
 			
-			try:
+			if ls_t != False:
 				if t in ls_t:
+					print('t in ls_t')
 					continue
-			except:
+			else:
 				pass
 			
 			if time.index(pd.to_datetime(t)) % 10 == 0:
 				print(f'{time.index(pd.to_datetime(t))} / {lentime}')
 			
 			tmp = block[['price', 'size', 'side']]
-			
+			print(tmp)
 			self.LOB = self.LOB.reset_index(drop=True)
-			
+
 			self.LOB = pd.concat([self.LOB, tmp], ignore_index=True).groupby(['price', 'side'], as_index=False).sum()
 			self.LOB = self.LOB[self.LOB['size'] != 0]
 			self.LOB.index = pd.Index([t] * len(self.LOB))
 			
 			self.save_LOB(state='tmp')
-			
+
 			if (self.LOB['size'] < 0).any():
 				print('Negative value in FOB:', self.LOB[self.LOB['size'] < 0])
 		
 		self.save_LOB(state='def')
+		
 		
 	def save_LOB(self, state: str = 'tmp'):
 		"""
