@@ -99,6 +99,7 @@ class FOBPreprocessor:
 			
 		self.FOB = pd.concat(chunks)
 		self.FOB[['previous_size', 'previous_price']] = self.FOB[['trade_size', 'order_price']]
+		self.FOB = self.FOB.loc[(self.FOB['order_event_type'] == 'New') & (self.FOB['order_size'] != 0)]
 	
 	def shift_orders(self):
 		"""
