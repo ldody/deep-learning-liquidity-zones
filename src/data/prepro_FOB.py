@@ -98,8 +98,6 @@ class FOBPreprocessor:
 			chunks.append(chunk)
 			
 		self.FOB = pd.concat(chunks)
-		self.FOB[['previous_size', 'previous_price']] = self.FOB[['trade_size', 'order_price']]
-		self.FOB = self.FOB.loc[~((self.FOB['order_event_type'] == 'New') & (self.FOB['order_size'] == 0))]
 	
 	def shift_orders(self):
 		"""
@@ -117,7 +115,7 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		ls_id = self.FOB[(self.FOB['order_event_type'] == 'Cancel') | (self.FOB['order_event_type'] == 'Modify')]['order_id'].unique().tolist()
+		ls_id = self.FOB[(self.FOB['order_event_type'] == 'Cancel') | (self.FOB['order_event_type'] == 'Modify') | (self.FOB['order_event_type'] == 'Fill')]['order_id'].unique().tolist()
 
 		mask = self.FOB['order_id'].isin(ls_id)
 		self.FOB.loc[mask, 'previous_price'] = self.FOB.loc[mask].groupby('order_id')['order_price'].shift(1)
