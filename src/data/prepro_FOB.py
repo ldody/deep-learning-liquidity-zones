@@ -121,7 +121,7 @@ class FOBPreprocessor:
 		self.FOB.loc[mask, 'previous_price'] = self.FOB.loc[mask].groupby('order_id')['order_price'].shift(1)
 		self.FOB.loc[mask, 'previous_size'] = self.FOB.loc[mask].groupby('order_id')['order_size'].shift(1)
 		
-		self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'previous_size'] = self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'trade_size']
+		self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'previous_size'] = self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'previous_size'] - self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'order_size']
 	
 	def resample_FOB_LOB(self, data, price: str, size: str, to_add: bool = True):
 		"""
