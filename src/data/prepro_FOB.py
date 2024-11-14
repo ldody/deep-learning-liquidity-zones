@@ -147,7 +147,7 @@ class FOBPreprocessor:
 		
 		resample_df = resample_df[resample_df[size] != 0]
 		
-		if add == False:
+		if to_add == False:
 			resample_df[size] *= -1
 		
 		resample_df.set_index('event_time_cet', inplace=True)
