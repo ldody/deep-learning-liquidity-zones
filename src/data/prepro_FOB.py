@@ -16,7 +16,7 @@ class FOBPreprocessor:
 	Args:
 		job_id (int, optionnal): Slurm job ID, Default=0.
 	"""
-	def __init__(self, job_id: int = 0):
+	def __init__(self, job_id: int = 0, resampling_unit: str = 'min'):
 		"""
 		Initializes the FOBPreprocessor instance.
 		
@@ -33,6 +33,7 @@ class FOBPreprocessor:
 			filename_zip (str): Name of the gzip file with the final parquet file with LOB dataframe.
 			file (str): Name of the FOB file in process.
 			isin (str): Name of the ISIN in process.
+			resampling_unit (str): Rule of resampling for the FOB.
 			
 		Args:
 			job_id (int, optionnal): Slurm job ID, Default=0.
@@ -52,6 +53,7 @@ class FOBPreprocessor:
 		self.filename_zip = None
 		self.file = ''
 		self.isin = ''
+		self.resampling_unit = resampling_unit
 		
 	def load_FOB(self):
 		"""
@@ -122,6 +124,42 @@ class FOBPreprocessor:
 		
 		self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'previous_size'] = self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'trade_size']
 	
+	def resample_FOB_LOB(self, price: str, size: str, to_add: bool = False):
+		"""
+		Resample the FOB for add/subtract sizes.
+		
+		Attributes:
+			FOB (DataFrame): FOB DataFrame.
+			resampling_unit (str): Rule of resampling for the FOB.
+		
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			resample_df (DataFrame): Resampled FOB dataframe with limit orders only.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
+		resample_df = self.FOB.copy()
+		
+		resample_df = resample_df.loc[resample_df['order_type'] == 'Limit', ['event_time_cet', 'order_side'] + [price, size]]
+		
+		resample_df = resample_df[resample_df[size] != 0]
+		
+		if add == False:
+			resample_df[size] *= -1
+		
+		resample_df.set_index('event_time_cet', inplace=True)
+		resample_df = resample_df.groupby(['order_side', price]).resample(self.resampling_unit).sum()[size].to_frame()
+
+		resample_df = resample_df[~resample_df.isna().any(axis=1)]
+		resample_df = resample_df.reset_index().groupby(['event_time_cet', 'order_side', price], as_index=False).last()
+		
+		resample_df.columns = ['event_time_cet', 'side', 'price', 'size']
+		
+		return resample_df
+	
 	def construct_LOB(self):
 		"""
 		Contruct LOB dataframe.
@@ -141,7 +179,12 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		time = self.FOB['event_time_cet'].sort_values().unique().tolist()
+		LOB_add = self.resample_FOB_LOB(price='order_price', size='order_size')
+		LOB_sub = self.resample_FOB_LOB(price='order_price', size='order_size', to_add=False)
+		resamp_FOB_LOB = pd.concat([FOB_add, FOB_sub], ignore_index=True).groupby(['event_time_cet', 'side', 'price'], as_index=False).sum()
+		resamp_FOB_LOB = resamp_FOB_LOB[resamp_FOB['size'] != 0]
+		
+		time = resamp_FOB_LOB['event_time_cet'].sort_values().unique().tolist()
 		lentime = len(time)
 
 		self.LOB = pd.DataFrame(columns=['price', 'size', 'side'])
@@ -164,7 +207,7 @@ class FOBPreprocessor:
 				
 			self.LOB = self.LOB.loc[last_t]
 	
-		for t, block in self.FOB.groupby('event_time_cet'):
+		for t, block in resamp_FOB_LOB.groupby('event_time_cet'):
 			
 			try:
 				if t in ls_t:
@@ -172,30 +215,14 @@ class FOBPreprocessor:
 			except:
 				pass
 			
-			if time.index(pd.to_datetime(t)) % 500 == 0:
+			if time.index(pd.to_datetime(t)) % 10 == 0:
 				print(f'{time.index(pd.to_datetime(t))} / {lentime}')
 			
+			tmp = block[['price', 'size', 'side']]
+			
 			self.LOB = self.LOB.reset_index(drop=True)
-			ls = [self.LOB]
 			
-			# Reload and new order + Modify (add volume)
-			tmp_add = block[['order_price', 'order_size', 'order_side']]
-			
-			if len(tmp_add) != 0:
-				tmp_add.columns = ['price', 'size', 'side']
-				tmp_add = tmp_add.groupby(['price', 'side'], as_index=False).sum()
-				ls.append(tmp_add)
-			
-			# Cancel, fill and modify order (subtract volume)
-			tmp_sub = block[['previous_price', 'previous_size', 'order_side']]
-			
-			if len(tmp_sub) != 0:
-				tmp_sub.columns = ['price', 'size', 'side']
-				tmp_sub = tmp_sub.groupby(['price', 'side'], as_index=False).sum()
-				tmp_sub['size'] = tmp_sub['size'] * -1
-				ls.append(tmp_sub)
-			
-			self.LOB = pd.concat(ls).groupby(['price', 'side'], as_index=False).sum()
+			self.LOB = pd.concat([self.LOB, tmp], ignore_index=True).groupby(['price', 'side'], as_index=False).sum()
 			self.LOB = self.LOB[self.LOB['size'] != 0]
 			self.LOB.index = pd.Index([t] * len(self.LOB))
 			
