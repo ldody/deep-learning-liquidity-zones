@@ -179,7 +179,7 @@ class FOBPreprocessor:
 		LOB_add = self.resample_FOB_LOB(data=self.FOB, price='order_price', size='order_size')
 		LOB_sub = self.resample_FOB_LOB(data=self.FOB, price='previous_price', size='previous_size', to_add=False)
 		resamp_FOB_LOB = pd.concat([LOB_add, LOB_sub], ignore_index=True).groupby(['event_time_cet', 'side', 'price'], as_index=False).sum()
-		resamp_FOB_LOB = resamp_FOB_LOB[resamp_FOB_LOB['size'] != 0]
+
 		print(resamp_FOB_LOB)
 		
 		time = resamp_FOB_LOB['event_time_cet'].sort_values().unique().tolist()
