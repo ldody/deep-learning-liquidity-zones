@@ -5,7 +5,7 @@
 #SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=all
 #SBATCH --mail-user=leo.dody1@univ-lyon3.fr
-#SBATCH --output=FOB_prepro_%a.out
+#SBATCH --output=/dev/null
 #SBATCH --job-name=FOB_prepro_%A_%a
 #SBATCH --partition=c6420-ib100
 #SBATCH --array=0-500%20
