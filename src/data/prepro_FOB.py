@@ -98,6 +98,7 @@ class FOBPreprocessor:
 			chunks.append(chunk)
 			
 		self.FOB = pd.concat(chunks)
+		self.FOB['time_in_force'] = self.FOB['time_in_force'].astype(str)
 	
 	def shift_orders(self):
 		"""
@@ -115,14 +116,26 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		ls_id = self.FOB[(self.FOB['order_event_type'] == 'Cancel') | (self.FOB['order_event_type'] == 'Modify') | (self.FOB['order_event_type'] == 'Fill')]['order_id'].unique().tolist()
+		ls_id = self.FOB.loc[(self.FOB['order_event_type'] == 'Cancel') | (self.FOB['order_event_type'] == 'Modify') | (self.FOB['order_event_type'] == 'Fill'), 'order_id'].unique()
 
 		mask = self.FOB['order_id'].isin(ls_id)
+		
 		self.FOB.loc[mask, 'previous_price'] = self.FOB.loc[mask].groupby('order_id')['order_price'].shift(1)
 		self.FOB.loc[mask, 'previous_size'] = self.FOB.loc[mask].groupby('order_id')['order_size'].shift(1)
 		
-		self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'previous_size'] = self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'previous_size'] - self.FOB.loc[self.FOB['order_event_type'] == 'Fill', 'order_size']
-	
+		#manage fill/new sort error
+		ls_id = self.FOB.loc[(self.FOB['order_event_type'] == 'Fill') & (self.FOB['previous_size'].isna()), 'order_id'].unique()
+		
+		mask = self.FOB['order_id'].isin(ls_id)
+		
+		t_mask = (mask & 
+				  ((self.FOB['order_event_type'] == 'New') | 
+				   ((self.FOB['order_event_type'] == 'Fill') & 
+					(self.FOB['previous_size'].isna()))))
+		
+		self.FOB.loc[mask, 'previous_price'] = self.FOB.loc[mask].groupby('order_id')['order_price'].shift(-1)
+		self.FOB.loc[mask, 'previous_size'] = self.FOB.loc[mask].groupby('order_id')['order_size'].shift(-1) 
+			
 	def resample_FOB_LOB(self, data, price: str, size: str, to_add: bool = True):
 		"""
 		Resample the FOB for add/subtract sizes.
@@ -217,11 +230,11 @@ class FOBPreprocessor:
 			else:
 				pass
 			
-			if time.index(pd.to_datetime(t)) % 10 == 0:
+			if time.index(pd.to_datetime(t)) % 100 == 0:
 				print(f'{time.index(pd.to_datetime(t))} / {lentime}')
 			
 			tmp = block[['price', 'size', 'side']]
-			print(tmp)
+
 			self.LOB = self.LOB.reset_index(drop=True)
 
 			self.LOB = pd.concat([self.LOB, tmp], ignore_index=True).groupby(['price', 'side'], as_index=False).sum()
@@ -230,8 +243,8 @@ class FOBPreprocessor:
 			
 			self.save_LOB(state='tmp')
 
-			if (self.LOB['size'] < 0).any():
-				print('Negative value in FOB:', self.LOB[self.LOB['size'] < 0])
+			#if (self.LOB['size'] < 0).any():
+				#print('Negative value in FOB:', self.LOB[self.LOB['size'] < 0])
 		
 		self.save_LOB(state='def')
 		
