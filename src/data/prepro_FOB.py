@@ -142,9 +142,7 @@ class FOBPreprocessor:
 		"""
 		resample_df = data.copy()
 		
-		resample_df = resample_df.loc[resample_df['order_type'] == 'Limit', ['event_time_cet', 'order_side'] + [price, size]]
-		
-		resample_df = resample_df[resample_df[size] != 0]
+		resample_df = resample_df.loc[(resample_df['order_type'] == 'Limit') & (resample_df['time_in_force'] == '0'), ['event_time_cet', 'order_side'] + [price, size]]
 		
 		if to_add == False:
 			resample_df[size] *= -1
