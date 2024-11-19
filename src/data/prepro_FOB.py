@@ -351,6 +351,7 @@ class FOBPreprocessor:
 			self.filename_zip = f'{self.isin}_{date}_FO.parquet.gzip'
 			
 			if self.filename_zip in os.listdir(self.processed_path_FO):
+				print('Already done')
 				pass
 				
 			else:
