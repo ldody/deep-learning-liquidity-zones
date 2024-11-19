@@ -51,7 +51,7 @@ class FOBPreprocessor:
 		self.processed_path_LOB = os.path.join(self.processed_path,'LOB')
 		self.processed_path_FO = os.path.join(self.processed_path,'FO')
 		self.fobdm = fobdm(self.job_id)
-		self.FOB = None
+		self.FOB = pd.DataFrame()
 		self.LOB = None
 		self.FO = None
 		self.filename_tmp = None
@@ -339,7 +339,7 @@ class FOBPreprocessor:
 				pass
 				
 			else:
-				if not self.FOB:
+				if self.FOB.empty:
 					self.load_FOB()
 					
 				self.shift_orders()
@@ -356,7 +356,7 @@ class FOBPreprocessor:
 				pass
 				
 			else:
-				if not self.FOB:
+				if self.FOB.empty:
 					self.load_FOB()
 
 				self.construct_FO()
