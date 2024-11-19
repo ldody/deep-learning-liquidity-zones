@@ -267,7 +267,8 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		self.FO = self.FOB.loc[(self.FOB['order_event_type'] == 'Fill'), ['event_time_cet','order_side','trade_size','trade_price']]
+		self.FO = self.FOB.copy()
+		self.FO = self.FO.loc[(self.FO['order_event_type'] == 'Fill'), ['event_time_cet','order_side','trade_size','trade_price']]
 
 		self.FO.set_index('event_time_cet', inplace=True)
 		self.FO = self.FO.groupby(['order_side', 'trade_price']).resample('min').sum()['trade_size'].to_frame()
