@@ -359,7 +359,6 @@ class FOBPreprocessor:
 					self.load_FOB()
 
 				self.construct_FO()
-				print('end')
 			
 			self.fobdm.terminate(data_type='FO')
 			

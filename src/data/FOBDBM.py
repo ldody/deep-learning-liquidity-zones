@@ -268,6 +268,7 @@ class FOBDataBaseManagement():
 		Raises:
 			None: This method does not raise error.
 		"""
+		
 		def create_cond(LOB: bool = True, Fill_order: bool = True):
 			"""
 			Create the condition to filter the DB.
@@ -308,8 +309,7 @@ class FOBDataBaseManagement():
 
 			if self.DB.empty or self.DB[cond].empty:
 				self.fill_DB()
-			
-			cond = create_cond(LOB=LOB_process, Fill_order=Fill_order_process)
+				cond = create_cond(LOB=LOB_process, Fill_order=Fill_order_process)
 
 			self.file_toprocess, self.isin_toprocess = self.DB[cond].reset_index(drop=True).loc[0, ['file', 'isin']].tolist()
 			cond &= (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
