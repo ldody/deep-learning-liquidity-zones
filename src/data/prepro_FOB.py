@@ -327,6 +327,7 @@ class FOBPreprocessor:
 			None: This method does not raise error.
 		"""
 		self.file, self.isin = self.fobdm.main(LOB_process=LOB_process, Fill_order_process=Fill_order_process)
+		print(self.file, self.isin)
 		
 		if LOB_process:
 			date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
