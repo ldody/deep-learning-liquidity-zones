@@ -59,7 +59,7 @@ class FOBDataBaseManagement():
 		Raises:
 			None: This method does not raise error.
 		"""
-		return pd.DataFrame(columns=['file', 'isin', 'state', 'allocate'])
+		return pd.DataFrame(columns=['file', 'isin', 'type', 'state', 'allocate'])
 	
 	def _get_zipfiles(self):
 		"""
@@ -117,8 +117,9 @@ class FOBDataBaseManagement():
 		Raises:
 			None: This method does not raise error.
 		"""
-		DB_tmp['isin'] = ls
+		DB_tmp['isin'] = ls*2
 		DB_tmp[['file','state','allocate']] = f,'Pending',np.nan
+		DB_tmp['type'] = [i for i in ['LOB', 'FO'] for _ in range(len(ls))]
 		
 		return DB_tmp
 		
@@ -173,7 +174,7 @@ class FOBDataBaseManagement():
 		"""
 		self.DB.loc[self.DB[cond].index, ['state','allocate']] = st, alloc
 		
-	def terminate(self):
+	def terminate(self, data_type: str):
 		"""
 		Fill the database dataframe with processing information for termination.
 		
@@ -192,8 +193,8 @@ class FOBDataBaseManagement():
 		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
 			
-			cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
-			self.DB.loc[self.DB[cond].index, ['state','allocate']] = 'Processed', np.nan
+			cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess) & (self.DB['type'] == data_type)
+			self.DB.loc[cond, ['state','allocate']] = 'Processed', np.nan
 			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
 			
 	def reinit(self):
@@ -218,8 +219,39 @@ class FOBDataBaseManagement():
 			self.DB['allocate'] = np.nan
 			
 			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
+			
+	def manual_termination(self, file, isin, data_type):
+		"""
+		Fill manually the database dataframe with processing information for termination.
+		
+		Attributes:
+			DB (DataFrame): Updated database DataFrame. 
+			
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
+		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
+			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
+			
+			cond = pd.Series(True, index=self.DB.index)
+		
+			if file:
+				cond &= (self.DB['file'].isin(file))
+			if isin:
+				cond &= (self.DB['isin'].isin(isin))
+			if data_type:
+				cond &= (self.DB['type'].isin(data_type))
+			
+			self.DB.loc[cond, ['state','allocate']] = 'Processed', np.nan
+			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
 	
-	def main(self):
+	def main(self, LOB_process: bool = True, Fill_order_process: bool = True):
 		"""
 		Launch the management of the dataframe and the allocation of files to process.
 		
@@ -236,21 +268,52 @@ class FOBDataBaseManagement():
 		Raises:
 			None: This method does not raise error.
 		"""
+		def create_cond(LOB: bool = True, Fill_order: bool = True):
+			"""
+			Create the condition to filter the DB.
+			
+			Attributes:
+				DB (DataFrame): Updated database DataFrame. 
+				
+			Args:
+				None: This method does not require args.
+
+			Returns:
+				cond (DataFrame): Dataframe with condition to filter the DB.
+			
+			Raises:
+				None: This method does not raise error.
+			"""
+			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'].isna())
+			
+			ls_type = []
+			if LOB:
+				ls_type.append('LOB')
+			if Fill_order:
+				ls_type.append('FO')
+				
+			if ls_type:
+				cond &= self.DB['type'].isin(ls_type)
+				
+			return cond
+		
+		
 		if self.DB_file not in os.listdir(self.path):
 			self._empty_DB_template().to_csv(os.path.join(self.path, self.DB_file), header=True)
 			
 		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
 			
-			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'].isna())
+			cond = create_cond(LOB=LOB_process, Fill_order=Fill_order_process)
 
 			if self.DB.empty or self.DB[cond].empty:
 				self.fill_DB()
 			
-			cond = (self.DB['state'] != 'Processed') & (self.DB['allocate'].isna())
+			cond = create_cond(LOB=LOB_process, Fill_order=Fill_order_process)
+
 			self.file_toprocess, self.isin_toprocess = self.DB[cond].reset_index(drop=True).loc[0, ['file', 'isin']].tolist()
-			fill_cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
-			self.fill_state_allocate(fill_cond, 'In progress', self.job_id)
+			cond &= (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess)
+			self.fill_state_allocate(cond, 'In progress', self.job_id)
 			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
 		
 		return self.file_toprocess, self.isin_toprocess
@@ -270,9 +333,23 @@ if __name__ == "__main__":
 	#retrieving arguments if any
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reinit', type=str2bool, default=False)
+	parser.add_argument('--lob', '-l', type=str2bool, default=True)
+	parser.add_argument('--fill_order', '-fo', type=str2bool, default=True)
+	# manually terminate process in DB
+	parser.add_argument('--terminate', '-t', type=str2bool, default=False)
+	parser.add_argument('--file', '-f', nargs='+',type=str)
+	parser.add_argument('--isin', '-i', nargs='+',type=str)
+	parser.add_argument('--data_type', '-dt', nargs='+',type=str)
+	
 	args = parser.parse_args()
 
 	fobdbm = FOBDataBaseManagement()
 
 	if args.reinit:
 		fobdbm.reinit()
+	
+	if args.terminate:
+		fobdbm.manual_termination(args.file, args.isin, args.data_type)
+	
+	else:
+		fobdbm.main(LOB_process=args.lob, Fill_order_process=args.fill_order)

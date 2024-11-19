@@ -8,7 +8,7 @@
 #SBATCH --output=/dev/null
 #SBATCH --job-name=FOB_prepro_%A_%a
 #SBATCH --partition=c6420-ib100
-#SBATCH --array=0-419%40
+#SBATCH --array=0-857%40
 
 
 module purge
@@ -18,6 +18,6 @@ source /home_nfs/polytech/leo.dody/PhD/Article_2/PhD_article_2/.venv/bin/activat
 
 export PYTHONUNBUFFERED=TRUE
 
-python3 ../src/data/prepro_FOB.py -sa True --job_id $SLURM_ARRAY_TASK_ID
+python3 ../src/data/prepro_FOB.py -sa True --job_id $SLURM_ARRAY_TASK_ID -l False
 
 deactivate

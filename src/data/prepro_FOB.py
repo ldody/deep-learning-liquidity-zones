@@ -26,11 +26,14 @@ class FOBPreprocessor:
 			job_id (int): Slurm job ID.
 			raw_path (str): Path of the repository with raw data of FOB /data/raw/FOB/.
 			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
+			processed_path (str): Path of the repository with processed data of LOB /data/processed/FOB/LOB/.
+			processed_path (str): Path of the repository with processed data of FO /data/processed/FOB/FO/.
 			fobdm (Class): Class from the FOB database management.
 			FOB (DataFrame): FOB DataFrame.
 			LOB (DataFrame): LOB DataFrame.
+			FO (DataFrame): FO DataFrame.
 			filename_tmp (str): Name of the temporary parquet file with LOB dataframe.
-			filename_zip (str): Name of the gzip file with the final parquet file with LOB dataframe.
+			filename_zip (str): Name of the gzip file with the final parquet file with LOB/FO dataframe.
 			file (str): Name of the FOB file in process.
 			isin (str): Name of the ISIN in process.
 			resampling_unit (str): Rule of resampling for the FOB.
@@ -45,9 +48,12 @@ class FOBPreprocessor:
 		self.job_id = job_id
 		self.raw_path = os.path.join(self.root_path,'data','raw','FOB')
 		self.processed_path = os.path.join(self.root_path,'data','processed','FOB')
+		self.processed_path_LOB = os.path.join(self.processed_path,'LOB')
+		self.processed_path_FO = os.path.join(self.processed_path,'FO')
 		self.fobdm = fobdm(self.job_id)
 		self.FOB = None
 		self.LOB = None
+		self.FO = None
 		self.filename_tmp = None
 		self.filename = None
 		self.filename_zip = None
@@ -192,8 +198,6 @@ class FOBPreprocessor:
 		LOB_add = self.resample_FOB_LOB(data=self.FOB, price='order_price', size='order_size')
 		LOB_sub = self.resample_FOB_LOB(data=self.FOB, price='previous_price', size='previous_size', to_add=False)
 		resamp_FOB_LOB = pd.concat([LOB_add, LOB_sub], ignore_index=True).groupby(['event_time_cet', 'side', 'price'], as_index=False).sum()
-
-		print(resamp_FOB_LOB)
 		
 		time = resamp_FOB_LOB['event_time_cet'].sort_values().unique().tolist()
 		lentime = len(time)
@@ -242,12 +246,37 @@ class FOBPreprocessor:
 			self.LOB.index = pd.Index([t] * len(self.LOB))
 			
 			self.save_LOB(state='tmp')
-
-			#if (self.LOB['size'] < 0).any():
-				#print('Negative value in FOB:', self.LOB[self.LOB['size'] < 0])
 		
 		self.save_LOB(state='def')
 		
+	def construct_FO(self):
+		"""
+		Contruct FO dataframe.
+		
+		Attributes:
+			FOB (DataFrame): FOB DataFrame.
+			filename_zip (str): Name of the gzip file with the final parquet file with LOB/FO dataframe.
+			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
+		
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
+		self.FO = self.FOB.loc[(self.FOB['order_event_type'] == 'Fill'), ['event_time_cet','order_side','trade_size','trade_price']]
+
+		self.FO.set_index('event_time_cet', inplace=True)
+		self.FO = self.FO.groupby(['order_side', 'trade_price']).resample('min').sum()['trade_size'].to_frame()
+
+		self.FO = self.FO[~self.FO.isna().any(axis=1)]
+		self.FO = self.FO.reset_index().groupby(['event_time_cet', 'order_side', 'trade_price'], as_index=False).last()
+		self.FO = self.FO[self.FO['trade_size'] != 0].set_index('event_time_cet')
+		
+		write(os.path.join(self.processed_path_FO, self.filename_zip), self.FO, compression='GZIP', append=False)
 		
 	def save_LOB(self, state: str = 'tmp'):
 		"""
@@ -256,7 +285,8 @@ class FOBPreprocessor:
 		Attributes:
 			LOB (DataFrame): LOB DataFrame.
 			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
-			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/ where the LOB is saved.
+			filename_zip (str): Name of the gzip file with the final parquet file with LOB/FO dataframe.
+			processed_path_LOB (str): Path of the repository with processed data of LOB /data/processed/FOB/ where the LOB is saved.
 			
 		Args:
 			state (str, optionnal): tmp or final version of the LOB csv file, Default='tmp'.
@@ -268,15 +298,15 @@ class FOBPreprocessor:
 			None: This method does not raise error.
 		"""
 		if state == 'tmp':
-			if self.filename_tmp not in os.listdir(self.processed_path):
-				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, compression='GZIP', append=False)
+			if self.filename_tmp not in os.listdir(self.processed_path_LOB):
+				write(os.path.join(self.processed_path_LOB, self.filename_tmp), self.LOB, compression='GZIP', append=False)
 			else:
-				write(os.path.join(self.processed_path, self.filename_tmp), self.LOB, compression='GZIP', append=True)
+				write(os.path.join(self.processed_path_LOB, self.filename_tmp), self.LOB, compression='GZIP', append=True)
 				
 		if state == 'def':			
-			os.rename(os.path.join(self.processed_path, self.filename_tmp), os.path.join(self.processed_path, self.filename_zip))
+			os.rename(os.path.join(self.processed_path_LOB, self.filename_tmp), os.path.join(self.processed_path_LOB, self.filename_zip))
 	
-	def array_process(self):
+	def array_process(self, LOB_process: bool = True, Fill_order_process: bool = True):
 		"""
 		Lauch FOB preprocessing from slurm array jobs.
 		
@@ -296,20 +326,75 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		self.file, self.isin = self.fobdm.main()
-		date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
-		self.filename_tmp = f'{self.isin}_{date}_tmp.parquet.gzip'
-		self.filename_zip = f'{self.isin}_{date}.parquet.gzip'
+		self.file, self.isin = self.fobdm.main(LOB_process=LOB_process, Fill_order_process=Fill_order_process)
 		
-		if self.filename_zip in os.listdir(self.processed_path):
-			pass
+		if LOB_process:
+			date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
+			self.filename_tmp = f'{self.isin}_{date}_LOB_tmp.parquet.gzip'
+			self.filename_zip = f'{self.isin}_{date}_LOB.parquet.gzip'
 			
-		else:   
-			self.load_FOB()
-			self.shift_orders()
-			self.construct_LOB()
+			if self.filename_zip in os.listdir(self.processed_path_LOB):
+				pass
+				
+			else:
+				if not self.FOB:
+					self.load_FOB()
+					
+				self.shift_orders()
+				self.construct_LOB()
+			
+			self.fobdm.terminate(data_type='LOB')
+			
+		if Fill_order_process:
+			date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
+			self.filename_zip = f'{self.isin}_{date}_FO.parquet.gzip'
+			
+			if self.filename_zip in os.listdir(self.processed_path_FO):
+				pass
+				
+			else:
+				if not self.FOB:
+					self.load_FOB()
+
+				self.construct_FO()
+			
+			self.fobdm.terminate(data_type='FO')
+			
+	def concat_data(self, LOB_process: bool = True, Fill_order_process: bool = True):
+		"""
+		Concatenate each LOB/FO files by isin.
 		
-		self.fobdm.terminate()
+		Attributes:
+			file (str): Name of the FOB file in process.
+			isin (str): Name of the ISIN in process.
+			filename_tmp (str): Name of the temporary csv file with LOB dataframe.
+			filename_zip (str): Name of the zip file with the final csv file with LOB dataframe.
+			processed_path (str): Path of the repository with processed data of FOB /data/processed/FOB/.
+		
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
+		if LOB_process:
+			files = os.listdir(self.processed_path_LOB)
+			isin_ls = list(set([i.split('_')[0] for i in files]))
+			
+			for isin in isin_ls:
+				df = pd.DataFrame()
+				for f in [file for file in files if isin in file]:
+					data = pd.read_parquet(os.path.join(self.processed_path_LOB, f))
+					df = pd.concat([df, data])
+					
+				write(os.path.join(self.processed_path_LOB, f'{isin}_final_LOB.parquet.gzip'), df, compression='GZIP', append=False)
+			
+		#if Fill_order_process:
+			
+		
 	
 #convert str to bool for argparse
 def str2bool(v):
@@ -326,15 +411,15 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--job_id', type=int, default=0)
 	parser.add_argument('--slurm_array', '-sa', type=str2bool, default=False)
-	parser.add_argument('--convert', '-c', type=str2bool, default=False)
+	parser.add_argument('--lob', '-l', type=str2bool, default=True)
+	parser.add_argument('--fill_order', '-fo', type=str2bool, default=True)
+	parser.add_argument('--concat', '-c', type=str2bool, default=False)
 	args = parser.parse_args()
 	
 	fobp = FOBPreprocessor(args.job_id)    
-	
-	if args.convert:
-		fobp.csv_to_parquet()
-		sys.exit('End of conversion')
-
 
 	if args.slurm_array:
-		fobp.array_process()
+		fobp.array_process(LOB_process=args.lob, Fill_order_process=args.fill_order)
+		
+	if args.concat:
+		fobp.concat_data(LOB_process=args.lob, Fill_order_process=args.fill_order)
