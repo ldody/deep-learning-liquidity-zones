@@ -217,6 +217,7 @@ class FOBDataBaseManagement():
 			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
 			
 			self.DB['allocate'] = np.nan
+			print(self.DB)
 			
 			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
 			
