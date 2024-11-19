@@ -220,6 +220,7 @@ class FOBDataBaseManagement():
 			print(self.DB[:30])
 			
 			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
+			print('file saved at:', os.path.join(self.path, self.DB_file))
 			
 	def manual_termination(self, file, isin, data_type):
 		"""
