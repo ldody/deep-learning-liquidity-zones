@@ -19,14 +19,11 @@ df_lob = pd.read_parquet(os.path.join(processed_path_LOB, 'NL0000226223_final_LO
 df_lob = df_lob[df_lob['index'] == '2023-10-31 15:01:00']
 df_lob['side'] = df_lob['side'].apply(lambda x: 1 if x == 'Buy' else -1)
 
-display(df_lob[['price','size','side']].to_numpy())
-
 data = df_lob[['price','size','side']].to_numpy()
 
 scaler = MinMaxScaler(feature_range=(-1, 1))
 data_scaled = scaler.fit_transform(data)
 data_scaled[:,2] = data[:,2]
-display(data_scaled)
 
 # Appliquer GMM
 n_components = 10  # Définir le nombre de clusters supposés
