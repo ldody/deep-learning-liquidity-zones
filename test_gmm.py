@@ -8,10 +8,10 @@ import os, sys
 path = os.path.dirname(os.path.abspath(__file__))
 root_path = path
 while os.path.basename(root_path) != 'PhD_article_2':
-	root_path =  os.path.dirname(root_path)
+	root_path = os.path.dirname(root_path)
 	
-processed_path = os.path.join(self.root_path,'data','processed','FOB')
-processed_path_LOB = os.path.join(self.processed_path,'LOB')
+processed_path = os.path.join(root_path,'data','processed','FOB')
+processed_path_LOB = os.path.join(processed_path,'LOB')
 
 
 df_lob = pd.read_parquet(os.path.join(processed_path_LOB, 'NL0000226223_final_LOB.parquet.gzip')).reset_index().drop_duplicates()
