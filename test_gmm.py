@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import MinMaxScaler
+import scipy
+from scipy.ndimage import gaussian_filter1d
 import pandas as pd
 import os, sys
 
@@ -16,14 +18,20 @@ processed_path_LOB = os.path.join(processed_path,'LOB')
 
 df_lob = pd.read_parquet(os.path.join(processed_path_LOB, 'NL0000226223_final_LOB.parquet.gzip')).reset_index().drop_duplicates()
 
+df_lob = df_lob[df_lob['side'] == 'Sell']
 df_lob = df_lob[df_lob['index'] == '2023-10-31 15:01:00']
+df_lob['color'] = df_lob['side'].apply(lambda x: 'green' if x == 'Buy' else 'red')
 df_lob['side'] = df_lob['side'].apply(lambda x: 1 if x == 'Buy' else -1)
+df_lob['smoothed_size'] = gaussian_filter1d(df_lob['size'], sigma=5)
 
-data = df_lob[['price','size','side']].to_numpy()
+data = df_lob.copy()
 
-scaler = MinMaxScaler(feature_range=(-1, 1))
-data_scaled = scaler.fit_transform(data)
-data_scaled[:,2] = data[:,2]
+data = data[['price','smoothed_size','side']].to_numpy()
+
+data_scaled = data.copy()
+
+data_scaled[:, 1] = np.log(data_scaled[:, 1])
+data_scaled[:, 1] = MinMaxScaler(feature_range=(0, 1)).fit_transform(data_scaled[:, 1].reshape(-1, 1)).squeeze()
 
 bic_scores = []
 
@@ -44,11 +52,13 @@ data_with_clusters = np.hstack((data, clusters.reshape(-1, 1)))
 
 # Visualisation des résultats
 plt.figure(figsize=(10, 6))
-scatter = plt.scatter(df_lob['price'].to_numpy(), df_lob['size'].to_numpy(), c=clusters, cmap='viridis', s=10)
+scatter = plt.scatter(df_lob['price'].to_numpy(), df_lob['size'].to_numpy(), c=clusters, cmap='Accent', s=10)
 plt.colorbar(scatter, label='Cluster Label')
 plt.title(f'Clustering des zones de liquidité avec GMM avec {n_components} clusters')
 plt.xlabel('Prix')
 plt.ylabel('Volumes')
+plt.xlim(35,45)
+plt.ylim(-50, 6000)
 plt.grid(True)
 plt.show()
 plt.savefig('fig_gmm.png')
