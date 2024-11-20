@@ -27,7 +27,9 @@ data_scaled[:,2] = data[:,2]
 
 bic_scores = []
 
-for n_clusters in range(1, 20):
+n_clusters_range = range(1, 20)
+
+for n_clusters in n_clusters_range:
 	gmm = GaussianMixture(n_components=n_clusters, covariance_type='full', random_state=42)
 	clusters = gmm.fit(data_scaled)
 	bic_scores.append(gmm.bic(data_scaled))
