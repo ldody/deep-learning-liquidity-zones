@@ -407,7 +407,7 @@ class FOBPreprocessor:
 					df = pd.concat([df, data])
 					os.remove(os.path.join(self.processed_path_FO, f))
 					
-				write(os.path.join(self.processed_path_FO, f'{isin}_final_LOB.parquet.gzip'), df, compression='GZIP', append=False)
+				write(os.path.join(self.processed_path_FO, f'{isin}_final_FO.parquet.gzip'), df, compression='GZIP', append=False)
 		
 	
 #convert str to bool for argparse
