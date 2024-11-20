@@ -25,8 +25,15 @@ scaler = MinMaxScaler(feature_range=(-1, 1))
 data_scaled = scaler.fit_transform(data)
 data_scaled[:,2] = data[:,2]
 
-# Appliquer GMM
-n_components = 10  # Définir le nombre de clusters supposés
+bic_scores = []
+
+for n_clusters in range(1, 20):
+	gmm = GaussianMixture(n_components=n_clusters, covariance_type='full', random_state=42)
+	clusters = gmm.fit(data_scaled)
+	bic_scores.append(gmm.bic(data_scaled))
+
+n_components = n_clusters_range[np.argmin(bic_scores)]
+
 gmm = GaussianMixture(n_components=n_components, covariance_type='full', random_state=42)
 clusters = gmm.fit_predict(data_scaled)
 
@@ -37,7 +44,7 @@ data_with_clusters = np.hstack((data, clusters.reshape(-1, 1)))
 plt.figure(figsize=(10, 6))
 scatter = plt.scatter(df_lob['price'].to_numpy(), df_lob['size'].to_numpy(), c=clusters, cmap='viridis', s=10)
 plt.colorbar(scatter, label='Cluster Label')
-plt.title('Clustering des zones de liquidité avec GMM')
+plt.title(f'Clustering des zones de liquidité avec GMM avec {n_components} clusters')
 plt.xlabel('Prix')
 plt.ylabel('Volumes')
 plt.grid(True)
