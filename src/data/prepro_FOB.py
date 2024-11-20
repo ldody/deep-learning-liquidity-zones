@@ -384,7 +384,7 @@ class FOBPreprocessor:
 			None: This method does not raise error.
 		"""
 		if LOB_process:
-			files = os.listdir(self.processed_path_LOB)
+			files = [i for i in os.listdir(self.processed_path_LOB) if 'final' not in i]
 			isin_ls = list(set([i.split('_')[0] for i in files]))
 			
 			for isin in isin_ls:
@@ -392,11 +392,22 @@ class FOBPreprocessor:
 				for f in [file for file in files if isin in file]:
 					data = pd.read_parquet(os.path.join(self.processed_path_LOB, f))
 					df = pd.concat([df, data])
+					os.remove(os.path.join(self.processed_path_LOB, f))
 					
 				write(os.path.join(self.processed_path_LOB, f'{isin}_final_LOB.parquet.gzip'), df, compression='GZIP', append=False)
 			
-		#if Fill_order_process:
+		if Fill_order_process:
+			files = [i for i in os.listdir(self.processed_path_FO) if 'final' not in i]
+			isin_ls = list(set([i.split('_')[0] for i in files]))
 			
+			for isin in isin_ls:
+				df = pd.DataFrame()
+				for f in [file for file in files if isin in file]:
+					data = pd.read_parquet(os.path.join(self.processed_path_FO, f))
+					df = pd.concat([df, data])
+					os.remove(os.path.join(self.processed_path_FO, f))
+					
+				write(os.path.join(self.processed_path_FO, f'{isin}_final_LOB.parquet.gzip'), df, compression='GZIP', append=False)
 		
 	
 #convert str to bool for argparse
