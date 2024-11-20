@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.mixture import GaussianMixture
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+import pandas as pd
+import os, sys
 
 path = os.path.dirname(os.path.abspath(__file__))
 root_path = path
