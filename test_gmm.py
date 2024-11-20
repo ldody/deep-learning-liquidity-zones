@@ -35,7 +35,7 @@ data_with_clusters = np.hstack((data, clusters.reshape(-1, 1)))
 
 # Visualisation des résultats
 plt.figure(figsize=(10, 6))
-scatter = plt.scatter(prices, volumes, c=clusters, cmap='viridis', s=10)
+scatter = plt.scatter(df_lob['price'].to_numpy(), df_lob['size'].to_numpy(), c=clusters, cmap='viridis', s=10)
 plt.colorbar(scatter, label='Cluster Label')
 plt.title('Clustering des zones de liquidité avec GMM')
 plt.xlabel('Prix')
