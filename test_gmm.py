@@ -22,7 +22,7 @@ df_lob = df_lob[df_lob['side'] == 'Sell']
 df_lob = df_lob[df_lob['index'] == '2023-10-31 15:01:00']
 df_lob['color'] = df_lob['side'].apply(lambda x: 'green' if x == 'Buy' else 'red')
 df_lob['side'] = df_lob['side'].apply(lambda x: 1 if x == 'Buy' else -1)
-df_lob['smoothed_size'] = gaussian_filter1d(df_lob['size'], sigma=5)
+df_lob['smoothed_size'] = gaussian_filter1d(df_lob['size'], sigma=6)
 
 data = df_lob.copy()
 
@@ -62,3 +62,7 @@ plt.ylim(-50, 6000)
 plt.grid(True)
 plt.show()
 plt.savefig('fig_gmm.png')
+
+df_res = pd.DataFrame(data_with_clusters, columns=['price','smoothed_size','side','cluster'])
+df_res['size'] = df_lob['size']
+df_res.to_csv('results_GMM.csv')
