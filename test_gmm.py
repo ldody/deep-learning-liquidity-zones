@@ -64,6 +64,6 @@ plt.show()
 plt.savefig('fig_gmm.png')
 
 df_res = pd.DataFrame(data_with_clusters, columns=['price','smoothed_size','side','cluster'])
-df_res['size'] = df_lob['size']
+df_res['size'] = df_lob['size'].reset_index()
 print(df_lob['size'])
 df_res.to_csv('results_GMM.csv')
