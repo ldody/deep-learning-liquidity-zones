@@ -19,7 +19,7 @@ processed_path_LOB = os.path.join(processed_path,'LOB')
 df_lob = pd.read_parquet(os.path.join(processed_path_LOB, 'NL0000226223_final_LOB.parquet.gzip')).reset_index().drop_duplicates()
 
 df_lob = df_lob[df_lob['side'] == 'Sell']
-df_lob = df_lob[df_lob['index'] == '2023-10-31 15:01:00']
+df_lob = df_lob[df_lob['index'] == '2023-10-02 10:01:00']
 df_lob['color'] = df_lob['side'].apply(lambda x: 'green' if x == 'Buy' else 'red')
 df_lob['side'] = df_lob['side'].apply(lambda x: 1 if x == 'Buy' else -1)
 df_lob['smoothed_size'] = gaussian_filter1d(df_lob['size'], sigma=6)
@@ -35,7 +35,7 @@ data_scaled[:, 1] = MinMaxScaler(feature_range=(0, 1)).fit_transform(data_scaled
 
 bic_scores = []
 
-n_clusters_range = range(1, 20)
+n_clusters_range = range(1, 40)
 
 for n_clusters in n_clusters_range:
 	gmm = GaussianMixture(n_components=n_clusters, covariance_type='full', random_state=42)
