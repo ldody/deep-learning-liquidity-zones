@@ -197,6 +197,29 @@ class FOBDataBaseManagement():
 			self.DB.loc[cond, ['state','allocate']] = 'Processed', np.nan
 			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
 			
+	def error_process(self, data_type: str):
+		"""
+		Fill the database dataframe with processing information for error.
+		
+		Attributes:
+			DB (DataFrame): Updated database DataFrame. 
+			
+		Args:
+			None: This method does not require args.
+
+		Returns:
+			None: This method does not return anything.
+		
+		Raises:
+			None: This method does not raise error.
+		"""
+		with FileLock(os.path.join(self.path, f'{self.DB_file}.lock')):
+			self.DB = pd.read_csv(os.path.join(self.path, self.DB_file), index_col=0)
+			
+			cond = (self.DB['file'] == self.file_toprocess) & (self.DB['isin'] == self.isin_toprocess) & (self.DB['type'] == data_type)
+			self.DB.loc[cond, ['state','allocate']] = 'Error', np.nan
+			self.DB.to_csv(os.path.join(self.path, self.DB_file), header=True)
+			
 	def reinit(self):
 		"""
 		Reinitialize the database allocation if error during process (slurm or other).

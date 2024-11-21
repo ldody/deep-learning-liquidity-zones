@@ -37,6 +37,7 @@ class FOBPreprocessor:
 			file (str): Name of the FOB file in process.
 			isin (str): Name of the ISIN in process.
 			resampling_unit (str): Rule of resampling for the FOB.
+			error_LOB (bool): Error in LOB if price of a buy order > price of a sell order for the same timestep.
 			
 		Args:
 			job_id (int, optionnal): Slurm job ID, Default=0.
@@ -60,6 +61,7 @@ class FOBPreprocessor:
 		self.file = ''
 		self.isin = ''
 		self.resampling_unit = resampling_unit
+		self.error_LOB = False
 		
 	def load_FOB(self):
 		"""
@@ -245,6 +247,9 @@ class FOBPreprocessor:
 			self.LOB = self.LOB[self.LOB['size'] != 0]
 			self.LOB.index = pd.Index([t] * len(self.LOB))
 			
+			if self.LOB.loc[self.LOB['side'] == 'Buy', 'price'].max() > self.LOB.loc[self.LOB['side'] == 'Sell', 'price'].min():
+				self.error_LOB = True
+			
 			self.save_LOB(state='tmp')
 		
 		self.save_LOB(state='def')
@@ -345,7 +350,11 @@ class FOBPreprocessor:
 				self.shift_orders()
 				self.construct_LOB()
 			
-			self.fobdm.terminate(data_type='LOB')
+			if self.error_LOB == True:
+				self.fobdm.error_process(data_type='LOB')
+				
+			else:
+				self.fobdm.terminate(data_type='LOB')
 			
 		if Fill_order_process:
 			date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
