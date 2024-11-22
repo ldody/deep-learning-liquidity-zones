@@ -37,7 +37,6 @@ class FOBPreprocessor:
 			file (str): Name of the FOB file in process.
 			isin (str): Name of the ISIN in process.
 			resampling_unit (str): Rule of resampling for the FOB.
-			error_LOB (bool): Error in LOB if price of a buy order > price of a sell order for the same timestep.
 			
 		Args:
 			job_id (int, optionnal): Slurm job ID, Default=0.
@@ -61,7 +60,6 @@ class FOBPreprocessor:
 		self.file = ''
 		self.isin = ''
 		self.resampling_unit = resampling_unit
-		self.error_LOB = False
 		
 	def load_FOB(self):
 		"""
@@ -124,25 +122,16 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		ls_id = self.FOB.loc[(self.FOB['order_event_type'] == 'Cancel') | (self.FOB['order_event_type'] == 'Modify') | (self.FOB['order_event_type'] == 'Fill'), 'order_id'].unique()
+		mask = (self.FOB['order_event_type'] == 'New') | (self.FOB['order_event_type'] == 'Reload')
+		self.FOB['initial_index'] = self.FOB.index
+		self.FOB = pd.concat([self.FOB[mask], self.FOB[~mask]], ignore_index=True)
+		
+		self.FOB['previous_price'] = self.FOB.groupby('order_id')['order_price'].shift(1)
+		self.FOB['previous_size'] = self.FOB.groupby('order_id')['order_size'].shift(1)
+		
+		self.FOB = self.FOB.sort_values('initial_index').set_index('initial_index')
+		self.FOB.name = None
 
-		mask = self.FOB['order_id'].isin(ls_id)
-		
-		self.FOB.loc[mask, 'previous_price'] = self.FOB.loc[mask].groupby('order_id')['order_price'].shift(1)
-		self.FOB.loc[mask, 'previous_size'] = self.FOB.loc[mask].groupby('order_id')['order_size'].shift(1)
-		
-		#manage fill/new sort error
-		ls_id = self.FOB.loc[(self.FOB['order_event_type'] == 'Fill') & (self.FOB['previous_size'].isna()), 'order_id'].unique()
-		
-		mask = self.FOB['order_id'].isin(ls_id)
-		
-		t_mask = (mask & 
-				  ((self.FOB['order_event_type'] == 'New') | 
-				   ((self.FOB['order_event_type'] == 'Fill') & 
-					(self.FOB['previous_size'].isna()))))
-		
-		self.FOB.loc[mask, 'previous_price'] = self.FOB.loc[mask].groupby('order_id')['order_price'].shift(-1)
-		self.FOB.loc[mask, 'previous_size'] = self.FOB.loc[mask].groupby('order_id')['order_size'].shift(-1) 
 			
 	def resample_FOB_LOB(self, data, price: str, size: str, to_add: bool = True):
 		"""
@@ -163,7 +152,7 @@ class FOBPreprocessor:
 		"""
 		resample_df = data.copy()
 		
-		resample_df = resample_df.loc[(resample_df['order_type'] == 'Limit') & (resample_df['time_in_force'] == '0'), ['event_time_cet', 'order_side'] + [price, size]]
+		resample_df = resample_df[['event_time_cet', 'order_side'] + [price, size]]
 		
 		if to_add == False:
 			resample_df[size] *= -1
@@ -197,8 +186,10 @@ class FOBPreprocessor:
 		Raises:
 			None: This method does not raise error.
 		"""
-		LOB_add = self.resample_FOB_LOB(data=self.FOB, price='order_price', size='order_size')
-		LOB_sub = self.resample_FOB_LOB(data=self.FOB, price='previous_price', size='previous_size', to_add=False)
+		data = self.FOB.copy()
+		data = data.loc[(data['order_type'] == 'Limit') & (data['time_in_force'] == '0')]
+		LOB_add = self.resample_FOB_LOB(data=data, price='order_price', size='order_size')
+		LOB_sub = self.resample_FOB_LOB(data=data, price='previous_price', size='previous_size', to_add=False)
 		resamp_FOB_LOB = pd.concat([LOB_add, LOB_sub], ignore_index=True).groupby(['event_time_cet', 'side', 'price'], as_index=False).sum()
 		
 		time = resamp_FOB_LOB['event_time_cet'].sort_values().unique().tolist()
@@ -247,9 +238,6 @@ class FOBPreprocessor:
 			self.LOB = self.LOB[self.LOB['size'] != 0]
 			self.LOB.index = pd.Index([t] * len(self.LOB))
 			
-			if self.LOB.loc[self.LOB['side'] == 'Buy', 'price'].max() > self.LOB.loc[self.LOB['side'] == 'Sell', 'price'].min():
-				self.error_LOB = True
-			
 			self.save_LOB(state='tmp')
 		
 		self.save_LOB(state='def')
@@ -276,7 +264,7 @@ class FOBPreprocessor:
 		self.FO = self.FO.loc[(self.FO['order_event_type'] == 'Fill'), ['event_time_cet','order_side','trade_size','trade_price']]
 
 		self.FO.set_index('event_time_cet', inplace=True)
-		self.FO = self.FO.groupby(['order_side', 'trade_price']).resample('min').sum()['trade_size'].to_frame()
+		self.FO = self.FO.groupby(['order_side', 'trade_price']).resample(self.resampling_unit).sum()['trade_size'].to_frame()
 
 		self.FO = self.FO[~self.FO.isna().any(axis=1)]
 		self.FO = self.FO.reset_index().groupby(['event_time_cet', 'order_side', 'trade_price'], as_index=False).last()
@@ -350,11 +338,7 @@ class FOBPreprocessor:
 				self.shift_orders()
 				self.construct_LOB()
 			
-			if self.error_LOB == True:
-				self.fobdm.error_process(data_type='LOB')
-				
-			else:
-				self.fobdm.terminate(data_type='LOB')
+			self.fobdm.terminate(data_type='LOB')
 			
 		if Fill_order_process:
 			date = os.path.splitext(os.path.splitext(self.file)[0])[0].split('_')[-1]
