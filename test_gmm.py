@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.neighbors import KernelDensity
 import scipy
 from scipy.ndimage import gaussian_filter1d
 import pandas as pd
