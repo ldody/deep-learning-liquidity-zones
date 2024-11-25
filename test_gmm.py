@@ -45,11 +45,11 @@ data = data[['price','smoothed_size','side']].to_numpy()
 data_scaled = data.copy()
 
 #data_scaled[:, 1] = np.log(data_scaled[:, 1])
-data_scaled[:, 1] = MinMaxScaler(feature_range=(0, 1)).fit_transform(data_scaled[:, 1].reshape(-1, 1)).squeeze()
+#data_scaled[:, 1] = MinMaxScaler(feature_range=(0, 1)).fit_transform(data_scaled[:, 1].reshape(-1, 1)).squeeze()
 
 bic_scores = []
 
-n_clusters_range = range(15, 40)
+n_clusters_range = range(10, 40)
 
 for n_clusters in n_clusters_range:
 	gmm = GaussianMixture(n_components=n_clusters, covariance_type='full', random_state=42)
