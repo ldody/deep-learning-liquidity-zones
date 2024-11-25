@@ -49,7 +49,7 @@ data_scaled = data.copy()
 
 bic_scores = []
 
-n_clusters_range = range(10, 40)
+n_clusters_range = range(1, 40)
 
 for n_clusters in n_clusters_range:
 	gmm = GaussianMixture(n_components=n_clusters, covariance_type='full', random_state=42)
