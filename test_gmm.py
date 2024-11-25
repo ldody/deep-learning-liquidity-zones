@@ -45,7 +45,7 @@ data = data[['price','smoothed_size','side']].to_numpy()
 data_scaled = data.copy()
 
 #data_scaled[:, 1] = np.log(data_scaled[:, 1])
-#data_scaled[:, 1] = MinMaxScaler(feature_range=(0, 1)).fit_transform(data_scaled[:, 1].reshape(-1, 1)).squeeze()
+data_scaled[:, 1] = MinMaxScaler(feature_range=(0, 1)).fit_transform(data_scaled[:, 1].reshape(-1, 1)).squeeze()
 
 bic_scores = []
 
