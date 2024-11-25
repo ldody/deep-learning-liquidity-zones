@@ -49,7 +49,7 @@ data_scaled[:, 1] = MinMaxScaler(feature_range=(0, 1)).fit_transform(data_scaled
 
 bic_scores = []
 
-n_clusters_range = range(3, 40)
+n_clusters_range = range(10, 40)
 
 for n_clusters in n_clusters_range:
 	gmm = GaussianMixture(n_components=n_clusters, covariance_type='full', random_state=42)
