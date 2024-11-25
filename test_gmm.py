@@ -23,7 +23,19 @@ df_lob = df_lob[df_lob['index'] == '2023-10-02 09:38:00']
 df_lob = df_lob[df_lob['price'] >= df_lob['price'].max() - 1.2]
 df_lob['color'] = df_lob['side'].apply(lambda x: 'green' if x == 'Buy' else 'red')
 df_lob['side'] = df_lob['side'].apply(lambda x: 1 if x == 'Buy' else -1)
-df_lob['smoothed_size'] = gaussian_filter1d(df_lob['size'], sigma=6)
+
+# KDE
+weight = np.repeat(df_lob['price'], df_lob['size']).to_numpy()
+price_range = np.arange(df_lob['price'].min(), df_lob['price'].max(), 0.02)[:, np.newaxis]
+
+kde = KernelDensity(kernel="gaussian", bandwidth=0.03).fit(weight.reshape(-1, 1))
+log_density = kde.score_samples(df_lob['price'].to_numpy().reshape(-1, 1))
+dens = np.exp(log_density)
+
+df_lob['smoothed_size'] = np.exp(log_density)
+df_lob['smoothed_size'] *= df_lob['size']
+
+#df_lob['smoothed_size'] = gaussian_filter1d(df_lob['size'], sigma=6)
 
 data = df_lob.copy()
 
@@ -31,7 +43,7 @@ data = data[['price','smoothed_size','side']].to_numpy()
 
 data_scaled = data.copy()
 
-data_scaled[:, 1] = np.log(data_scaled[:, 1])
+#data_scaled[:, 1] = np.log(data_scaled[:, 1])
 data_scaled[:, 1] = MinMaxScaler(feature_range=(0, 1)).fit_transform(data_scaled[:, 1].reshape(-1, 1)).squeeze()
 
 bic_scores = []
