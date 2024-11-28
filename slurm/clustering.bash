@@ -2,10 +2,10 @@
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem-per-cpu=2000
+#SBATCH --mem-per-cpu=4000
 #SBATCH --mail-type=all
 #SBATCH --mail-user=leo.dody1@univ-lyon3.fr
-#SBATCH --output=/dev/null
+#SBATCH --output=clustering_%a.out #/dev/null
 #SBATCH --job-name=clustering_%A_%a
 #SBATCH --partition=c6420-ib100
 #SBATCH --array=0-389%20
