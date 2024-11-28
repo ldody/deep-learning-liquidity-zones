@@ -127,7 +127,7 @@ class clustering(Base):
 		self.data = self.data.set_index('index').between_time('9:00', '17:30').reset_index()
 
 		# to remove after testing
-		self.data = self.data.loc[self.data['index'].isin(self.data['index'].unique()[:40])]
+		#self.data = self.data.loc[self.data['index'].isin(self.data['index'].unique()[:40])]
 		
 	def checking_file(self):
 		"""Checking if file already processed.
