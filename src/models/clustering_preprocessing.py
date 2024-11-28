@@ -49,7 +49,7 @@ class ClusteringPreprocess:
 		
 	def LOB_preprocessing(self, data, asset_char):
 		
-		data[['liquidity_ref','smoothed_size']] = 0
+		data[['liquidity_ref','smoothed_size']] = 0.0
 
 		for _, chunk in data.groupby('index'):
 			if chunk.empty: continue

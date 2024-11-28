@@ -192,6 +192,7 @@ class clustering(Base):
 		self.assets = self.assets.merge(self.files_input, on=['ISIN', 'data'], how='inner')
 		
 		self.row = self.assets.loc[self.job_id]
+		print(self.row)
 		
 		self.filename_results = f'{self.row["ISIN"]}_clustering_{self.row["data"]}_{self.row["timestep"]}.parquet.gzip'
 		
