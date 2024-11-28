@@ -87,7 +87,7 @@ class ClusteringPreprocess:
 				c['smoothed_size'] = np.exp(log_density)
 				c['smoothed_size'] *= c['size']
 				
-				chunk.loc[c.index, 'smoothed_size'] = c['smoothed_size']
+				chunk.loc[c.index, 'smoothed_size'] = c['smoothed_size'].astype(float)
 			
 			           
 			try:
