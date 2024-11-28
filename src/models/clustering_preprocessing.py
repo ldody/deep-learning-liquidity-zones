@@ -90,7 +90,11 @@ class ClusteringPreprocess:
 				chunk.loc[c.index, 'smoothed_size'] = c['smoothed_size']
 			
 			           
-			chunk['smoothed_size'] = MinMaxScaler(feature_range=(0, 1)).fit_transform(chunk['smoothed_size'].to_numpy().reshape(-1, 1)).squeeze()
+			try:
+				chunk['smoothed_size'] = MinMaxScaler(feature_range=(0, 1)).fit_transform(chunk['smoothed_size'].to_numpy().reshape(-1, 1)).squeeze()
+				
+			except:
+				pass
 
 			data.loc[chunk.index, ['side', 'liquidity_ref', 'smoothed_size']] = chunk[['side', 'liquidity_ref', 'smoothed_size']]
 		data = data[data['liquidity_ref'] != 0]
