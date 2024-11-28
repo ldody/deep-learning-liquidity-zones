@@ -8,7 +8,7 @@ from fastparquet import write
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.neighbors import KernelDensity
-import tqdm
+from tqdm import tqdm
 
 
 class ClusteringPreprocess:
