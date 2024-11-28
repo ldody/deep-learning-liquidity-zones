@@ -52,6 +52,7 @@ class ClusteringPreprocess:
 		data[['liquidity_ref','smoothed_size']] = 0
 
 		for _, chunk in data.groupby('index'):
+			if chunk.empty: continue
 			
 			lower_bound = chunk.loc[chunk['side'] == 'Buy','price'].max() - asset_char['range'] 
 			upper_bound = chunk.loc[chunk['side'] == 'Sell','price'].min() + asset_char['range']

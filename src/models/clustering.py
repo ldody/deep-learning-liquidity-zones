@@ -171,7 +171,7 @@ class clustering(Base):
 		data.loc[:, 'cluster'] = 0
 		
 		for _, chunk in tqdm(data.groupby('index'), desc='Processing data with DBSCAN', total=len(data['index'].unique()), ncols=100):
-			
+			if chunk.empty: continue
 			w = chunk.apply(lambda row: set_weights(row), axis=1)
 			
 			data_scaled = chunk.copy()[['price','smoothed_size','side']].to_numpy()
