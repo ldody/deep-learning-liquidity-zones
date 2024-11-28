@@ -170,7 +170,7 @@ class clustering(Base):
 		
 		data.loc[:, 'cluster'] = 0
 		
-		for _, chunk in tqdm(data.groupby('index'), desc='Processing data with DBSCAN', total=len(data['index'].unique()), ncols=100):
+		for _, chunk in tqdm(data.groupby('index'), desc='Processing data with DBSCAN', total=len(data['index'].unique()), ncols=100, mininterval=10):
 			if chunk.empty: continue
 			w = chunk.apply(lambda row: set_weights(row), axis=1)
 			
@@ -232,7 +232,6 @@ if __name__ == "__main__":
 	clust = clustering(args.job_id)    
 
 	if args.slurm_array:
-		export TQDM_MININTERVAL=10
 		clust.get_files()
 		clust.load_asset_characteristics()
 		clust.array_process()
