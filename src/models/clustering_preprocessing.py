@@ -9,6 +9,7 @@ from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.neighbors import KernelDensity
 from tqdm import tqdm
+export TQDM_MININTERVAL=10
 
 
 class ClusteringPreprocess:
@@ -52,7 +53,7 @@ class ClusteringPreprocess:
 		
 		data[['liquidity_ref','smoothed_size']] = 0.0
 
-		for _, chunk in tqdm(data.groupby('index'), desc='Processing data with DBSCAN', total=len(data['index'].unique()), ncols=100):
+		for _, chunk in tqdm(data.groupby('index'), desc='Preprocessing data', total=len(data['index'].unique()), ncols=100):
 			if chunk.empty: continue
 			
 			lower_bound = chunk.loc[chunk['side'] == 'Buy','price'].max() - asset_char['range'] 

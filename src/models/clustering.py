@@ -232,6 +232,7 @@ if __name__ == "__main__":
 	clust = clustering(args.job_id)    
 
 	if args.slurm_array:
+		export TQDM_MININTERVAL=10
 		clust.get_files()
 		clust.load_asset_characteristics()
 		clust.array_process()
