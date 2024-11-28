@@ -51,7 +51,7 @@ class ClusteringPreprocess:
 		
 		data[['liquidity_ref','smoothed_size']] = 0.0
 
-		for _, chunk in data.groupby('index'):
+		for _, chunk in tqdm(data.groupby('index'), desc='Processing data with DBSCAN', total=len(data['index'].unique()), ncols=100):
 			if chunk.empty: continue
 			
 			lower_bound = chunk.loc[chunk['side'] == 'Buy','price'].max() - asset_char['range'] 
