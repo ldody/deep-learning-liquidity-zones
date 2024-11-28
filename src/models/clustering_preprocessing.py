@@ -9,7 +9,7 @@ from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.neighbors import KernelDensity
 from tqdm import tqdm
-export TQDM_MININTERVAL=10
+export TQDM_MININTERVAL=60
 
 
 class ClusteringPreprocess:
