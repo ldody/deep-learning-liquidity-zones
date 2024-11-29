@@ -8,7 +8,7 @@
 #SBATCH --output=clustering_%a.out #/dev/null
 #SBATCH --job-name=clustering_%A_%a
 #SBATCH --partition=c6420-ib100
-#SBATCH --array=0-2%2
+#SBATCH --array=0-194%20
 
 
 module purge
