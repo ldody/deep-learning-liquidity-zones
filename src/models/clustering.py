@@ -142,14 +142,15 @@ class clustering(Base):
 		"""
 		def func_resamp(chunk):
 			if chunk.empty:
-				print('empty chunk', chunk)
+				return chunk
+				
 			chunk = chunk.loc[chunk.index.max()]
 			chunk = chunk.groupby(chunk.index).agg(list)
 			return chunk
 			
 		data = data.set_index('index').resample(self.row['timestep']).apply(lambda col: func_resamp(col))
 
-		data = data.explode(data.columns.to_list())
+		data = data.explode(data.columns.to_list()).dropna()
 		
 		return data
 	
