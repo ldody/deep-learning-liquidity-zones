@@ -150,7 +150,7 @@ class clustering(Base):
 			
 		data = data.set_index('index').resample(self.row['timestep']).apply(lambda col: func_resamp(col))
 
-		data = data.explode(data.columns.to_list()).dropna()
+		data = data.explode(data.columns.to_list()).dropna().reset_index()
 		
 		return data
 	
