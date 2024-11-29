@@ -137,11 +137,10 @@ class clustering(Base):
 			
 		else: return True
 	
-	def resample_data(self, data, unit: str):
+	def resample_data(self, data):
 		"""Resampling data.
 		"""
-		unit = int(unit.split('min')[0])
-		data = data.set_index('index').resample(unit).apply(lambda row: row.loc[row.index.max()].to_list())
+		data = data.set_index('index').resample(self.row['timestep']).apply(lambda row: row.loc[row.index.max()].to_list())
 
 		data = data.explode(data.columns.to_list())
 		
@@ -212,7 +211,7 @@ class clustering(Base):
 		self.load_data(self.row['ISIN'], self.row['data'])
 		
 		if self.row['data'] == 'LOB':
-			self.data = self.resample_data(data=self.data, unit=self.row['timestep'])
+			self.data = self.resample_data(data=self.data)
 			prepro_data = self.prepro.LOB_preprocessing(self.data, self.row)
 			self.num_steps = len(prepro_data['index'].unique())
 			self.DBSCAN_clustering(prepro_data)
