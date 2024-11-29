@@ -142,7 +142,7 @@ class clustering(Base):
 		"""
 		def func_resamp(chunk):
 			if chunk.empty:
-				print('empty chunk')
+				print('empty chunk', chunk)
 			chunk = chunk.loc[chunk.index.max()]
 			chunk = chunk.groupby(chunk.index).agg(list)
 			return chunk
