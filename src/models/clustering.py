@@ -140,7 +140,12 @@ class clustering(Base):
 	def resample_data(self, data):
 		"""Resampling data.
 		"""
-		data = data.set_index('index').resample(self.row['timestep']).apply(lambda row: row.loc[row.index.max()].to_list())
+		def func_resamp(chunk):
+			chunk = chunk.loc[chunk.index.max()]
+			chunk = chunk.groupby(chunk.index).agg(list)
+			return chunk
+			
+		data = data.set_index('index').resample(self.row['timestep']).apply(lambda col: func_resamp(col))
 
 		data = data.explode(data.columns.to_list())
 		
