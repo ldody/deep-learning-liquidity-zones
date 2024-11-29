@@ -141,8 +141,8 @@ class clustering(Base):
 		"""Resampling data.
 		"""
 		def func_resamp(chunk):
-			print(chunk.index.isna().sum())
-			chunk.index = pd.to_datetime(chunk.index)
+			if chunk.empty:
+				print('empty chunk')
 			chunk = chunk.loc[chunk.index.max()]
 			chunk = chunk.groupby(chunk.index).agg(list)
 			return chunk
