@@ -50,7 +50,7 @@ class ClusteringPostprocess:
 		
 	def LOB_postprocessing(self, data, asset_char):
 		
-		tick_step = asset_char['tick_step']
+		tick_step = asset_char['Tick_step']
 		
 		data = data.groupby(['index','side','cluster'], as_index=False).agg({'size': 'sum', 
 																  'liquidity_ref': 'last', 
