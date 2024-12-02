@@ -77,6 +77,6 @@ class ClusteringPostprocess:
 				else:
 					inter.append((row['price_min'], row['price_max']))
 					
-		data = data[(~data['stick_to_prev']) & (data['cluster'] != -1) & (data['ratio'] > 0.02)]
+		data = data[(~data['stick_to_prev']) & (data['cluster'] != -1)]
 		
 		return data
