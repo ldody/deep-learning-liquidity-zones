@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from clustering_preprocessing import ClusteringPreprocess as cprepro
-#from clustering_postprocessing import ClusteringPostprocess as cpostpro
+from clustering_postprocessing import ClusteringPostprocess as cpostpro
 
 # log method execution
 def log_execution(func):
@@ -90,6 +90,7 @@ class clustering(Base):
 		self.data = None
 		self.row = ''
 		self.prepro = cprepro()
+		self.prepro = cpostpro()
 		self.files_input = pd.DataFrame(columns=['ISIN','data'])
 		
 	def get_files(self):
@@ -200,7 +201,7 @@ class clustering(Base):
 			
 			data.loc[chunk.index, 'cluster'] = chunk['cluster']
 			
-		write(os.path.join(self.results_path_LOB, self.filename_results), data, compression='GZIP', append=False)
+		return data
 		
 		
 	def array_process(self):
@@ -222,7 +223,9 @@ class clustering(Base):
 			self.data = self.resample_data(data=self.data)
 			prepro_data = self.prepro.LOB_preprocessing(self.data, self.row)
 			self.num_steps = len(prepro_data['index'].unique())
-			self.DBSCAN_clustering(prepro_data)
+			data = self.DBSCAN_clustering(prepro_data)
+			postpro_data = self.prepro.LOB_postprocessing(data, self.row)
+			write(os.path.join(self.results_path_LOB, self.filename_results), postpro_data, compression='GZIP', append=False)
 			
 		if self.row['data'] == 'FO':
 			pass
