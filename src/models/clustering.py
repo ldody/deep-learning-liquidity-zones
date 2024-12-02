@@ -90,7 +90,7 @@ class clustering(Base):
 		self.data = None
 		self.row = ''
 		self.prepro = cprepro()
-		self.prepro = cpostpro()
+		self.postpro = cpostpro()
 		self.files_input = pd.DataFrame(columns=['ISIN','data'])
 		
 	def get_files(self):
@@ -224,7 +224,7 @@ class clustering(Base):
 			prepro_data = self.prepro.LOB_preprocessing(self.data, self.row)
 			self.num_steps = len(prepro_data['index'].unique())
 			data = self.DBSCAN_clustering(prepro_data)
-			postpro_data = self.prepro.LOB_postprocessing(data, self.row)
+			postpro_data = self.postpro.LOB_postprocessing(data, self.row)
 			write(os.path.join(self.results_path_LOB, self.filename_results), postpro_data, compression='GZIP', append=False)
 			
 		if self.row['data'] == 'FO':
