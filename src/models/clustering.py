@@ -118,6 +118,7 @@ class clustering(Base):
 		
 		self.assets = pd.concat([t, t], ignore_index=True)
 		self.assets['data'] = [i for i in ['LOB', 'FO'] for _ in range(len(t))]
+		self.assets = self.asset[self.asset['timestep'] == '1min']
 		
 	def load_data(self, asset, data_type):
 		"""Loading data to cluster.
