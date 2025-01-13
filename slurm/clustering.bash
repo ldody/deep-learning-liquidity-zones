@@ -18,6 +18,6 @@ source /home_nfs/polytech/leo.dody/PhD/Article_2/PhD_article_2/.venv/bin/activat
 
 export PYTHONUNBUFFERED=TRUE
 
-python3 ../src/models/clustering.py -sa True --job_id $SLURM_ARRAY_TASK_ID
+python3 ../src/models/clustering_main.py -sa True --job_id $SLURM_ARRAY_TASK_ID
 
 deactivate
