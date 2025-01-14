@@ -52,6 +52,8 @@ class ClusteringPostprocess:
 		
 		tick_step = asset_char['Tick_step']
 		
+		data = data.drop_duplicates(keep='first')
+		
 		data = data.groupby(['index','side','cluster'], as_index=False).agg({'size': 'sum', 
 																  'liquidity_ref': 'last', 
 																  'price': ['min', 'max']})
@@ -80,7 +82,7 @@ class ClusteringPostprocess:
 					
 		data = data[(~data['stick_to_prev']) & (data['cluster'] != -1)]
 		"""
-		data = data.drop_duplicates(keep='first')
+		
 		data = data[data['cluster'] != -1]
 		
 		return data
