@@ -154,11 +154,16 @@ class clustering(Base):
 			data_scaled = chunk.copy()[['price','smoothed_size','side']]
 
 			clusterer = HDBSCAN_model(self.row['Tick_step']).model_build()
-			clusterer.fit(data_scaled[['price','side','smoothed_size']])
-
-			chunk['cluster'] = clusterer.labels_
 			
-			data.loc[chunk.index, 'cluster'] = chunk['cluster']
+			try:
+				clusterer.fit(data_scaled[['price','side','smoothed_size']])
+
+				chunk['cluster'] = clusterer.labels_
+				
+				data.loc[chunk.index, 'cluster'] = chunk['cluster']
+				
+			except:
+				print(data_scaled[['price','side','smoothed_size']])
 			
 		return data
 		
