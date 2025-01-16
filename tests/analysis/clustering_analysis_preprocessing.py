@@ -58,7 +58,7 @@ class ClusteringAnalysisPreprocess:
 		
 		clusters['cross_time'] = np.nan
 		
-		for i, row in tqdm(clusters.iterrows(), desc='Preprocessing data for clustering analysis', total=len(clusters), ncols=100, mininterval=60):
+		for i, row in tqdm(clusters.iterrows(), desc='Preprocessing data for clustering analysis', total=len(clusters), ncols=100, mininterval=600):
 			clusters.loc[i, 'cross_time'] = self.cross_detection(row, OHLCV)
 		
 		write(os.path.join(self.results_path_analysis, filename), clusters, compression='GZIP', append=False)
