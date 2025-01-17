@@ -77,6 +77,6 @@ class ClusteringAnalysisPreprocess:
 		cond = ((cluster['index'] <= df_price['Local Time']) & (cluster['side'] * (df_price['price'] - bound) <= 0))
 		
 		try:
-			return df_price.loc[cond, 'Local Time'].first()
+			return df_price.loc[cond, 'Local Time'].iloc[0]
 		except:
 			return np.nan
