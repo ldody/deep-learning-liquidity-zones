@@ -56,7 +56,7 @@ class ClusteringAnalysisPreprocess:
 			return clusters
 		
 		
-		clusters['cross_time'] = np.nan
+		clusters['cross_time'] = pd.NaT
 		
 		for i, row in tqdm(clusters.iterrows(), desc='Preprocessing data for clustering analysis', total=len(clusters), ncols=100, mininterval=600):
 			clusters.loc[i, 'cross_time'] = self.cross_detection(row, OHLCV)
@@ -79,4 +79,4 @@ class ClusteringAnalysisPreprocess:
 		try:
 			return df_price.loc[cond, 'Local Time'].iloc[0]
 		except:
-			return np.nan
+			return pd.NaT
