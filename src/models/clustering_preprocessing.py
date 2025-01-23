@@ -64,7 +64,7 @@ class ClusteringPreprocess:
 			buy_liq = chunk[chunk['side'] == 'Buy']['size'].sum()
 			sell_liq = chunk[chunk['side'] == 'Sell']['size'].sum()
 
-			chunk['liquidity_ref'] = chunk.apply(lambda row: buy_liq if row['side'] == 'Buy' else sell_liq, axis=1)
+			chunk['liquidity_ref'] = buy_liq + sell_liq
 
 			chunk['side'] = chunk['side'].apply(lambda x: 1 if x == 'Buy' else -1)
 			'''
