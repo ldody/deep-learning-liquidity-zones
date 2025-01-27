@@ -71,9 +71,9 @@ class ClusteringAnalysisPreprocess:
 		"""
 		bound = max(cluster['price_min'], cluster['side'] * cluster['price_max'])
 		
-		df_price['price'] = df_price.apply(lambda row: min(row['Low'], cluster['side'] * row['Close']), axis=1)
+		df_price['price'] = df_price.apply(lambda row: abs(min(row['Low'], cluster['side'] * row['High'])), axis=1)
 		df_price = df_price[['Local Time', 'price']]
-		
+		print(bound)
 		cond = ((cluster['index'] < df_price['Local Time']) & (cluster['side'] * (df_price['price'] - bound) <= 0))
 		
 		try:
