@@ -106,9 +106,14 @@ class clustering_analysis(Base):
 		if filename_results in os.listdir(self.results_path_analysis):
 			sys.exit('Analysis already performed')
 		
-		self.load_data()
-		print(self.df_ohlcv, self.df_data)
-		data = self.prepro().preprocessing(self.df_ohlcv, self.df_data, filename_results_prepro)
+		if filename_results_prepro in os.listdir(self.results_path_analysis):
+			data = pd.read_parquet(os.path.join(self.results_path_analysis, filename_results_prepro))
+			
+		else:
+			self.load_data()
+			print(self.df_ohlcv, self.df_data)
+			data = self.prepro().preprocessing(self.df_ohlcv, self.df_data, filename_results_prepro)
+		
 		print(data)
 		
 
