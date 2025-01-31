@@ -6,6 +6,7 @@ import numpy as np
 import argparse
 from fastparquet import write
 from tqdm import tqdm, tqdm_pandas
+import ta
 
 
 class ClusteringAnalysisPreprocess:
@@ -61,6 +62,15 @@ class ClusteringAnalysisPreprocess:
 		for i, row in tqdm(clusters.iterrows(), desc='Preprocessing data for clustering analysis', total=len(clusters), ncols=100, mininterval=600):
 			clusters.loc[i, 'cross_time'] = self.cross_detection(row, OHLCV)
 		
+		OHLCV['MACD'] = ta.trend.macd_signal(OHLCV['Close'], window_slow=26, window_fast=12).apply(lambda x: 1 if x > 0 else -1 if x < 0 else 0 if x == 0 else np.nan)
+		
+		clusters['delta'] = clusters.apply(lambda row: self.calc_delta(row['index'], row['cross_time']) if not pd.isna(row['cross_time']) else np.nan, axis=1)
+		clusters = clusters.merge(OHLCV[['Local Time','Close','MACD']], left_on='index', right_on='Local Time')
+		clusters['dist'] = abs(clusters['Close'] - clusters[['price_min','price_max']].mean(axis=1))
+		clusters = clusters[(clusters['dist'] != 0) & (clusters['ratio'] <= 1)]
+		clusters = clusters.dropna(subset=['MACD'])
+		
+		
 		write(os.path.join(self.results_path_analysis, filename), clusters, compression='GZIP', append=False)
 		
 		return clusters
@@ -73,10 +83,19 @@ class ClusteringAnalysisPreprocess:
 		
 		df_price['price'] = df_price.apply(lambda row: abs(min(row['Low'], cluster['side'] * row['High'])), axis=1)
 		df_price = df_price[['Local Time', 'price']]
-		print(bound)
 		cond = ((cluster['index'] < df_price['Local Time']) & (cluster['side'] * (df_price['price'] - bound) <= 0))
 		
 		try:
 			return df_price.loc[cond, 'Local Time'].iloc[0]
 		except:
 			return pd.NaT
+			
+	def calc_delta(self, start, end):
+		"""
+		Calculating time delta considering only open market hours and days.
+		"""
+		time_range = pd.date_range(start=start, end=end, freq='min')
+		time_range = time_range.to_series().between_time("09:00", "17:30")
+		time_range = time_range[time_range.index.weekday < 5]
+		
+		return len(time_range) - 1

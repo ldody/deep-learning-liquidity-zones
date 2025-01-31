@@ -86,7 +86,7 @@ class clustering_analysis(Base):
 		"""
 		self.df_ohlcv = pd.read_csv(self.to_process['OHLCV'])
 		self.df_ohlcv['Local Time'] = pd.to_datetime(self.df_ohlcv['Local Time'])
-		self.df_ohlcv = self.df_ohlcv.set_index('Local Time').between_time('9:00', '17:00').reset_index()
+		self.df_ohlcv = self.df_ohlcv.set_index('Local Time').between_time('9:00', '17:30').reset_index()
 		
 		self.df_data = pd.read_parquet(self.to_process['path'])
 		self.df_data = self.df_data.set_index('index').between_time('9:00', '17:00').reset_index()
@@ -106,14 +106,9 @@ class clustering_analysis(Base):
 		if filename_results in os.listdir(self.results_path_analysis):
 			sys.exit('Analysis already performed')
 		
-		if filename_results_prepro in os.listdir(self.results_path_analysis):
-			data = pd.read_parquet(os.path.join(self.results_path_analysis, filename_results_prepro))
-			
-		else:
-			self.load_data()
-			print(self.df_ohlcv, self.df_data)
-			data = self.prepro().preprocessing(self.df_ohlcv, self.df_data, filename_results_prepro)
-		
+		self.load_data()
+		print(self.df_ohlcv, self.df_data)
+		data = self.prepro().preprocessing(self.df_ohlcv, self.df_data, filename_results_prepro)
 		print(data)
 		
 
