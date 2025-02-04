@@ -114,16 +114,12 @@ class clustering_analysis(Base):
 			print(data)
 			
 		if 'results.parquet.gzip' not in os.listdir(self.results_path_analysis):
-			try:
-				with FileLock(os.path.join(self.results_path_analysis, 'clust_analysis.txt.lock')).acquire(timeout=0):
-					self.analysis(self.results_path_analysis)
-					
-					time.sleep(10)
-					
-			except Timeout:
-				sys.exit()
+			with FileLock(os.path.join(self.results_path_analysis, 'clust_analysis.txt.lock')).acquire(timeout=0):
+				self.analysis(self.results_path_analysis)
+				
+				time.sleep(10)
 			
-		print(os.getenv())
+		print(os.getenv('SLURM_ARRAY_TASK_ID'))
 		
 
 
