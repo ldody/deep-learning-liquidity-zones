@@ -3,9 +3,12 @@ import os, sys
 import pandas as pd
 import numpy as np
 import argparse
+from filelock import FileLock
+import time
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from clustering_analysis_preprocessing import ClusteringAnalysisPreprocess as prepro
+from clustering_analysis import analysis
 from base_log import Base, log_execution
 
 
@@ -52,6 +55,7 @@ class clustering_analysis(Base):
 		self.files_input = pd.DataFrame(columns=['ISIN','data'])
 		self.to_process = None
 		self.prepro = prepro
+		self.analysis = analysis
 
 	def get_files(self):
 		"""
@@ -109,8 +113,15 @@ class clustering_analysis(Base):
 			data = self.prepro().preprocessing(self.df_ohlcv, self.df_data, filename_results_prepro)
 			print(data)
 			
-		if len([f for f in os.listdir(self.results_path_analysis) if (os.path.splitext(f)[1] == '.parquet') and ('prepro' in f)]) == 39:
-			print(os.getenv('SLURM_ARRAY_TASK_ID'))
+		if 'results.parquet.gzip' not in os.listdir(self.results_path_analysis):
+			try:
+				with FileLock('clust_analysis.lock').acquire(timeout=0):
+					self.analysis(self.results_path_analysis)
+					
+					time.sleep(10)
+					
+			except Timeout:
+				sys.exit()
 			
 		print(os.getenv())
 		
