@@ -111,6 +111,8 @@ class clustering_analysis(Base):
 			
 		if len([f for f in os.listdir(self.results_path_analysis) if (os.path.splitext(f)[1] == '.parquet') and ('prepro' in f)]) == 39:
 			print(os.getenv('SLURM_ARRAY_TASK_ID'))
+			
+		print(os.getenv('SLURM_ARRAY_TASK_ID'))
 		
 
 
