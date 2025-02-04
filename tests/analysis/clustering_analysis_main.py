@@ -109,7 +109,7 @@ class clustering_analysis(Base):
 			data = self.prepro().preprocessing(self.df_ohlcv, self.df_data, filename_results_prepro)
 			print(data)
 			
-		if len([f for f in os.listdir(self.results_path_analysis) if (os.path.splitext(f)[1] == '.parquet') and ('prepro' in f)]):
+		if len([f for f in os.listdir(self.results_path_analysis) if (os.path.splitext(f)[1] == '.parquet') and ('prepro' in f)]) == 39:
 			print(os.getenv('SLURM_ARRAY_TASK_ID'))
 		
 
