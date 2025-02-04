@@ -103,7 +103,7 @@ class clustering_analysis(Base):
 		filename_results = f'{self.to_process["ISIN"]}_clustering_analysis_{self.to_process["data_type"]}parquet.gzip'
 		filename_results_prepro = f'{self.to_process["ISIN"]}_clustering_analysis_{self.to_process["data_type"]}_prepro.parquet.gzip'
 		
-		if filename_results not in os.listdir(self.results_path_analysis):
+		if filename_results_prepro not in os.listdir(self.results_path_analysis):
 			self.load_data()
 			print(self.df_ohlcv, self.df_data)
 			data = self.prepro().preprocessing(self.df_ohlcv, self.df_data, filename_results_prepro)
