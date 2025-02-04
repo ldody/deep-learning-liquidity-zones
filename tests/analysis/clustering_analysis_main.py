@@ -115,7 +115,7 @@ class clustering_analysis(Base):
 			
 		if 'results.parquet.gzip' not in os.listdir(self.results_path_analysis):
 			try:
-				with FileLock('clust_analysis.lock').acquire(timeout=0):
+				with FileLock(os.path.join(self.results_path_analysis, 'clust_analysis.txt.lock')).acquire(timeout=0):
 					self.analysis(self.results_path_analysis)
 					
 					time.sleep(10)
