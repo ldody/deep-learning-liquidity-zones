@@ -95,10 +95,10 @@ class HDBSCAN_model():
 		Evaluation with Davies-Bouldin index.
 		"""
 		mask = labels != -1
-			if len(set(labels[mask])) > 1:
-				return davies_bouldin_score(X[mask], labels[mask])
-			else:
-				return np.nan
+		if len(set(labels[mask])) > 1:
+			return davies_bouldin_score(X[mask], labels[mask])
+		else:
+			return np.nan
 		
 		
 #convert str to bool for argparse
