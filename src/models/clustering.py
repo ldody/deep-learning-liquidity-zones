@@ -8,6 +8,7 @@ from fastparquet import write
 import hdbscan
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.neighbors import KernelDensity
+from sklearn.metrics import davies_bouldin_score
 from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -88,6 +89,16 @@ class HDBSCAN_model():
 		)
 		
 		return dist
+		
+	def evaluation(X, labels):
+		"""
+		Evaluation with Davies-Bouldin index.
+		"""
+		mask = labels != -1
+			if len(set(labels[mask])) > 1:
+				return davies_bouldin_score(X[mask], labels[mask])
+			else:
+				return np.nan
 		
 		
 #convert str to bool for argparse

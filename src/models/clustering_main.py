@@ -148,6 +148,8 @@ class clustering(Base):
 		
 		data.loc[:, 'cluster'] = 0
 		
+		score = []
+		
 		for _, chunk in tqdm(data.groupby('index'), desc='Processing data with DBSCAN', total=len(data['index'].unique()), ncols=100, mininterval=10):
 			if chunk.empty: continue
 			
@@ -157,6 +159,8 @@ class clustering(Base):
 			
 			try:
 				clusterer.fit(data_scaled[['price','side','smoothed_size']])
+				
+				score.append(HDBSCAN_model.evaluation(data_scaled[['price','side','smoothed_size']], clusterer.labels_))
 
 				chunk['cluster'] = clusterer.labels_
 				
@@ -165,6 +169,9 @@ class clustering(Base):
 			except:
 				print(data_scaled[['price','side','smoothed_size']])
 			
+		score_df = pd.DataFrame(score, columns=['score']).describe()
+		score_df.to_csv(os.path.join(self.results_path_LOB, 'score_' + self.filename_results))
+		
 		return data
 		
 		
@@ -180,8 +187,8 @@ class clustering(Base):
 		print(self.row)
 		self.filename_results = f'{self.row["ISIN"]}_clustering_{self.row["data"]}_{self.row["timestep"]}.parquet.gzip'
 		
-		if not self.checking_file():
-			sys.exit(f'Clustering already performed for: {self.row["ISIN"]} {self.row["data"]}')
+		#if not self.checking_file():
+			#sys.exit(f'Clustering already performed for: {self.row["ISIN"]} {self.row["data"]}')
 		
 		self.load_data(self.row['ISIN'], self.row['data'])
 		
