@@ -170,7 +170,7 @@ class clustering(Base):
 				print(data_scaled[['price','side','smoothed_size']])
 			
 		score_df = pd.DataFrame(score, columns=['score']).describe()
-		score_df.to_csv(os.path.join(self.results_path_LOB, 'score_' + self.filename_results))
+		write(os.path.join(self.results_path_LOB, 'score_' + self.filename_results), score_df, compression='GZIP', append=False)
 		
 		return data
 		
