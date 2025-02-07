@@ -148,7 +148,7 @@ class clustering(Base):
 		
 		data.loc[:, 'cluster'] = 0
 		
-		score = []
+		DBI_ls, dunn_ls, silhouette_ls = [], [], []
 		
 		for _, chunk in tqdm(data.groupby('index'), desc='Processing data with DBSCAN', total=len(data['index'].unique()), ncols=100, mininterval=10):
 			if chunk.empty: continue
@@ -160,7 +160,9 @@ class clustering(Base):
 			try:
 				clusterer.fit(data_scaled[['price','side','smoothed_size']])
 				
-				score.append(HDBSCAN_model.evaluation(data_scaled[['price','side','smoothed_size']], clusterer.labels_))
+				DBI_ls.append(HDBSCAN_model.evaluation.DBI(data_scaled[['price','side','smoothed_size']], clusterer.labels_))
+				dunn_ls.append(HDBSCAN_model.evaluation.dunn_index(data_scaled[['price','side','smoothed_size']], clusterer.labels_))
+				silhouette_ls.append(HDBSCAN_model.evaluation.silhouette_score(data_scaled[['price','side','smoothed_size']], clusterer.labels_))
 
 				chunk['cluster'] = clusterer.labels_
 				
@@ -169,7 +171,12 @@ class clustering(Base):
 			except:
 				print(data_scaled[['price','side','smoothed_size']])
 			
-		score_df = pd.DataFrame(score, columns=['score']).describe()
+		DBI_df = pd.DataFrame(DBI_ls, columns=['DBI'])
+		dunn_df = pd.DataFrame(dunn_ls, columns=['dunn'])
+		silhouette_df = pd.DataFrame(silhouette_ls, columns=['silhouette'])
+		
+		score = pd.concat([DBI_df, dunn_df, silhouette_df], axis=1, ignore_index=True)
+		
 		write(os.path.join(self.results_path_LOB, 'score_' + self.filename_results), score_df, compression='GZIP', append=False)
 		
 		return data
