@@ -170,12 +170,8 @@ class clustering(Base):
 				
 			except:
 				print(data_scaled[['price','side','smoothed_size']])
-			
-		DBI_df = pd.DataFrame(DBI_ls, columns=['DBI'])
-		dunn_df = pd.DataFrame(dunn_ls, columns=['dunn'])
-		silhouette_df = pd.DataFrame(silhouette_ls, columns=['silhouette'])
 		
-		score_df = pd.concat([DBI_df, dunn_df, silhouette_df], axis=1, ignore_index=True)
+		score_df = pd.DataFrame({'DBI':DBI_ls, 'dunn':dunn_ls, 'silhouette':silhouette_ls})
 		
 		write(os.path.join(self.results_path_LOB, 'score_' + self.filename_results), score_df, compression='GZIP', append=False)
 		
