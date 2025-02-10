@@ -112,7 +112,7 @@ class clustering(Base):
 		self.data = self.data.set_index('index').between_time('9:00', '17:30').reset_index()
 
 		# to remove after testing
-		#self.data = self.data.loc[self.data['index'].isin(self.data['index'].unique()[:40])]
+		self.data = self.data.loc[self.data['index'].isin(self.data['index'].unique()[:40])]
 		
 	def checking_file(self):
 		"""
@@ -148,7 +148,7 @@ class clustering(Base):
 		
 		data.loc[:, 'cluster'] = 0
 		
-		DBI_ls, dunn_ls, silhouette_ls = [], [], []
+		stat, p_values = [], []
 		
 		for _, chunk in tqdm(data.groupby('index'), desc='Processing data with DBSCAN', total=len(data['index'].unique()), ncols=100, mininterval=10):
 			if chunk.empty: continue
@@ -157,27 +157,19 @@ class clustering(Base):
 
 			clusterer = HDBSCAN_model(self.row['Tick_step']).model_build()
 			
-			try:
-				clusterer.fit(data_scaled[['price','side','smoothed_size']])
-				
-				DBI_ls.append(HDBSCAN_model.evaluation.DBI(data_scaled[['price','side','smoothed_size']], clusterer.labels_))
-				dunn_ls.append(HDBSCAN_model.evaluation.dunn_index(data_scaled[['price','side','smoothed_size']], clusterer.labels_))
-				silhouette_ls.append(HDBSCAN_model.evaluation.silhouette_score(data_scaled[['price','side','smoothed_size']], clusterer.labels_))
+			
+			clusterer.fit(data_scaled[['price','side','smoothed_size']])
+			
+			st, p = HDBSCAN_model.evaluation.anova(data_scaled[['price']], clusterer.labels_)
+			stat.append(st)
+			p_values.append(p)
 
-				chunk['cluster'] = clusterer.labels_
-				
-				data.loc[chunk.index, 'cluster'] = chunk['cluster']
-				
-			except:
-				print(data_scaled[['price','side','smoothed_size']])
+			chunk['cluster'] = clusterer.labels_
+			
+			data.loc[chunk.index, 'cluster'] = chunk['cluster']
 		
-		len_ls = max(len(DBI_ls),len(dunn_ls),len(silhouette_ls))
-
-		DBI_ls = DBI_ls + [np.nan]*(len_ls - len(DBI_ls))
-		dunn_ls = dunn_ls + [np.nan]*(len_ls - len(dunn_ls))
-		silhouette_ls = silhouette_ls + [np.nan]*(len_ls - len(silhouette_ls))
 		
-		score_df = pd.DataFrame({'DBI':DBI_ls, 'dunn':dunn_ls, 'silhouette':silhouette_ls})
+		score_df = pd.DataFrame({'stat':stat, 'p_values':p_values})
 		
 		write(os.path.join(self.results_path_LOB, 'score_' + self.filename_results), score_df, compression='GZIP', append=False)
 		

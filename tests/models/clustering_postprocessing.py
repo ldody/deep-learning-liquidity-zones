@@ -50,16 +50,12 @@ class ClusteringPostprocess:
 		
 	def LOB_postprocessing(self, data, asset_char):
 		
-		tick_step = asset_char['Tick_step']
-		
-		data = data.drop_duplicates(keep='first')
-		
 		data = data.groupby(['index','side','cluster'], as_index=False).agg({'size': 'sum', 
 																  'liquidity_ref': 'last', 
 																  'price': ['min', 'max']})
 
 		data.columns = ['_'.join(col) if (isinstance(col, tuple)) & ('price' in col) else col[0] for col in data.columns]
-		data['range'] = data[['price_min','price_max']].apply(lambda row: abs(row['price_min'] - row['price_max']) if (row['price_min'] - row['price_max']) != 0 else tick_step, axis=1)
+		data['range'] = data[['price_min','price_max']].apply(lambda row: abs(row['price_min'] - row['price_max']) if (row['price_min'] - row['price_max']) != 0 else asset_char['Tick_step'], axis=1)
 		data['density'] = data['size'] / data['range']
 		data['ratio'] = data['size'] / data['liquidity_ref']
 
@@ -82,7 +78,7 @@ class ClusteringPostprocess:
 					
 		data = data[(~data['stick_to_prev']) & (data['cluster'] != -1)]
 		"""
-		
+		data = data.drop_duplicates(keep='first')
 		data = data[data['cluster'] != -1]
 		
 		return data

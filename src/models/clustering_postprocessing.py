@@ -55,7 +55,7 @@ class ClusteringPostprocess:
 																  'price': ['min', 'max']})
 
 		data.columns = ['_'.join(col) if (isinstance(col, tuple)) & ('price' in col) else col[0] for col in data.columns]
-		data['range'] = data[['price_min','price_max']].apply(lambda row: abs(row['price_min'] - row['price_max']) if (row['price_min'] - row['price_max']) != 0 else tick_step, axis=1)
+		data['range'] = data[['price_min','price_max']].apply(lambda row: abs(row['price_min'] - row['price_max']) if (row['price_min'] - row['price_max']) != 0 else asset_char['Tick_step'], axis=1)
 		data['density'] = data['size'] / data['range']
 		data['ratio'] = data['size'] / data['liquidity_ref']
 

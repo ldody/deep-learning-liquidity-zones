@@ -8,6 +8,7 @@ from fastparquet import write
 import hdbscan
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.neighbors import KernelDensity
+import scipy.stats as stats
 from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -88,6 +89,23 @@ class HDBSCAN_model():
 		)
 		
 		return dist
+		
+	class evaluation:
+		"""
+		Evaluation of the clusters.
+		"""
+		def anova(X, labels):
+			'''
+			ANOVA test to ensure the data point distributions are well separated.
+			'''
+			data = X.copy()
+			data['labels'] = labels
+			data = data[data['labels'] != -1]
+			
+			groups = [data[data['labels'] == i]['price'] for i in data['labels'].unique()]
+			stat, p_value = stats.f_oneway(*groups)
+			
+			return stat, p_value
 		
 		
 #convert str to bool for argparse

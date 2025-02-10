@@ -8,7 +8,7 @@ from fastparquet import write
 import hdbscan
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.neighbors import KernelDensity
-from sklearn.metrics import davies_bouldin_score, silhouette_score
+import scipy.stats as stats
 from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -94,52 +94,18 @@ class HDBSCAN_model():
 		"""
 		Evaluation of the clusters.
 		"""
-		def DBI(X, labels):
-			"""
-			Evaluation with Davies-Bouldin index.
-			"""
-			mask = labels != -1
-			if len(set(labels[mask])) > 1:
-				return davies_bouldin_score(X[mask], labels[mask])
-			else:
-				return np.nan
-				
-		def dunn_index(X, labels):
-			"""
-			Evaluation with Dunn index.
-			"""
-			mask = labels != -1
-			unique_labels = np.unique(labels[mask])
-
-			intra_dists = []
-			for label in unique_labels:
-				cluster_points = X[labels == label]
-				if len(cluster_points) > 1:
-					intra_dists.append(np.max(cdist(cluster_points, cluster_points)))
+		def anova(X, labels):
+			'''
+			ANOVA test to ensure the data point distributions are well separated.
+			'''
+			data = X.copy()
+			data['labels'] = labels
+			data = data[data['labels'] != -1]
 			
-			inter_dists = []
-			for i, label_a in enumerate(unique_labels):
-				for label_b in unique_labels[i+1:]:
-					cluster_a = X[labels == label_a]
-					cluster_b = X[labels == label_b]
-					inter_dists.append(np.min(cdist(cluster_a, cluster_b)))
-
-			if intra_dists and inter_dists:
-				return min(inter_dists) / max(intra_dists)  # Dunn index
-			else:
-				return np.nan
-				
-		def silhouette_score(X, labels):
-			"""
-			Evaluation with silhouette score.
-			"""
-			mask = labels != -1
-
-			if len(np.unique(labels[mask])) > 1:
-				silhouette_avg = silhouette_score(X[mask], labels[mask])
-				return silhouette_avg
-			else:
-				return np.nan
+			groups = [data[data['labels'] == i]['price'] for i in data['labels'].unique()]
+			stat, p_value = stats.f_oneway(*groups)
+			
+			return stat, p_value
 		
 		
 #convert str to bool for argparse
