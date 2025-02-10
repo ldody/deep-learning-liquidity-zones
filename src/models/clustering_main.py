@@ -110,9 +110,6 @@ class clustering(Base):
 		filename = [f for f in os.listdir(tmp_path) if f'{asset}_final_{data_type}' in f][0]
 		self.data = pd.read_parquet(os.path.join(tmp_path, filename)).reset_index().drop_duplicates()
 		self.data = self.data.set_index('index').between_time('9:00', '17:30').reset_index()
-
-		# to remove after testing
-		self.data = self.data.loc[self.data['index'].isin(self.data['index'].unique()[:40])]
 		
 	def checking_file(self):
 		"""
