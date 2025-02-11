@@ -103,9 +103,10 @@ class HDBSCAN_model():
 			data = data[data['labels'] != -1]
 			
 			groups = [data[data['labels'] == i]['price'] for i in data['labels'].unique()]
-			stat, p_value = stats.f_oneway(*groups)
-			
-			return stat, p_value
+			try:
+				return stats.f_oneway(*groups)
+			except:
+				return np.nan, np.nan
 		
 		
 #convert str to bool for argparse
