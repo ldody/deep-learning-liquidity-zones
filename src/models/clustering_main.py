@@ -115,7 +115,7 @@ class clustering(Base):
 		"""
 		Checking if file already processed.
 		"""
-		if self.filename_results in os.listdir(self.results_path_LOB) + os.listdir(self.results_path_FO):
+		if {self.filename_results,self.filename_score}.issubset(os.listdir(self.results_path_LOB) + os.listdir(self.results_path_FO)):
 			return False
 			
 		else: return True
@@ -184,9 +184,10 @@ class clustering(Base):
 		self.row = self.assets.loc[self.job_id]
 		print(self.row)
 		self.filename_results = f'{self.row["ISIN"]}_clustering_{self.row["data"]}_{self.row["timestep"]}.parquet.gzip'
+		self.filename_score = 'score_' + self.filename_results
 		
-		#if not self.checking_file():
-			#sys.exit(f'Clustering already performed for: {self.row["ISIN"]} {self.row["data"]}')
+		if not self.checking_file():
+			sys.exit(f'Clustering already performed for: {self.row["ISIN"]} {self.row["data"]}')
 		
 		self.load_data(self.row['ISIN'], self.row['data'])
 		
