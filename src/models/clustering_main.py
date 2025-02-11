@@ -143,7 +143,7 @@ class clustering(Base):
 		Processing data with DBSCAN.
 		"""
 		
-		data.loc[:, 'cluster'] = 0
+		data.loc[:, 'cluster'] = -1
 		
 		stat, p_values = [], []
 		
@@ -154,18 +154,19 @@ class clustering(Base):
 
 			clusterer = HDBSCAN_model(self.row['Tick_step']).model_build()
 			
-			
-			clusterer.fit(data_scaled[['price','side','smoothed_size']])
-			
-			st, p = HDBSCAN_model.evaluation.anova(data_scaled[['price']], clusterer.labels_)
-			stat.append(st)
-			p_values.append(p)
+			try:
+				clusterer.fit(data_scaled[['price','side','smoothed_size']])
+				
+				st, p = HDBSCAN_model.evaluation.anova(data_scaled[['price']], clusterer.labels_)
+				stat.append(st)
+				p_values.append(p)
 
-			chunk['cluster'] = clusterer.labels_
+				chunk['cluster'] = clusterer.labels_
+				
+				data.loc[chunk.index, 'cluster'] = chunk['cluster']
+				
+			except: pass
 			
-			data.loc[chunk.index, 'cluster'] = chunk['cluster']
-		
-		
 		score_df = pd.DataFrame({'stat':stat, 'p_values':p_values})
 		
 		write(os.path.join(self.results_path_LOB, 'score_' + self.filename_results), score_df, compression='GZIP', append=False)
