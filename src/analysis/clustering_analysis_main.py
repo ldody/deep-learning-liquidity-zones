@@ -3,9 +3,12 @@ import os, sys
 import pandas as pd
 import numpy as np
 import argparse
+from filelock import FileLock
+import time
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from clustering_analysis_preprocessing import ClusteringAnalysisPreprocess as prepro
+from clustering_analysis import analysis
 from base_log import Base, log_execution
 
 
@@ -34,7 +37,8 @@ class clustering_analysis(Base):
 		self.data_path = os.path.join(self.root_path,'data')
 		self.ohlcv_path = os.path.join(self.data_path,'raw','OHLCV')
 		self.processed_path = os.path.join(self.data_path,'processed','FOB')
-		self.processed_path_LOB = os.path.join(self.processed_path,'LOB')
+		#self.processed_path_LOB = os.path.join(self.processed_path,'LOB')
+		self.processed_path_LOB = os.path.join(self.root_path,'results','clustering_evaluation') # data postpro evaluation
 		self.processed_path_FO = os.path.join(self.processed_path,'FO')
 		self.results_path = os.path.join(self.root_path,'results','clustering')
 		self.results_path_analysis = os.path.join(self.root_path,'results','clustering_analysis')
@@ -52,6 +56,7 @@ class clustering_analysis(Base):
 		self.files_input = pd.DataFrame(columns=['ISIN','data'])
 		self.to_process = None
 		self.prepro = prepro
+		self.analysis = analysis
 
 	def get_files(self):
 		"""
@@ -90,6 +95,7 @@ class clustering_analysis(Base):
 		
 		self.df_data = pd.read_parquet(self.to_process['path'])
 		self.df_data = self.df_data.set_index('index').between_time('9:00', '17:00').reset_index()
+        self.df_data = self.df_data[self.df_data['err'] == ]
 		
 		
 	def array_process(self):
@@ -103,13 +109,20 @@ class clustering_analysis(Base):
 		filename_results = f'{self.to_process["ISIN"]}_clustering_analysis_{self.to_process["data_type"]}parquet.gzip'
 		filename_results_prepro = f'{self.to_process["ISIN"]}_clustering_analysis_{self.to_process["data_type"]}_prepro.parquet.gzip'
 		
-		if filename_results in os.listdir(self.results_path_analysis):
-			sys.exit('Analysis already performed')
-		
-		self.load_data()
-		print(self.df_ohlcv, self.df_data)
-		data = self.prepro().preprocessing(self.df_ohlcv, self.df_data, filename_results_prepro)
-		print(data)
+		if filename_results_prepro not in os.listdir(self.results_path_analysis):
+			self.load_data()
+			print(self.df_ohlcv, self.df_data)
+			data = self.prepro().preprocessing(self.df_ohlcv, self.df_data, filename_results_prepro)
+			print(data)
+			
+		if 'results.parquet.gzip' not in os.listdir(self.results_path_analysis):
+			with FileLock(os.path.join(self.results_path_analysis, 'clust_analysis.txt.lock')).acquire(timeout=0):
+				print('performing task')
+				self.analysis(self.results_path_analysis).load_data()
+				
+				time.sleep(10)
+			
+		print(os.getenv('SLURM_ARRAY_TASK_ID'))
 		
 
 
