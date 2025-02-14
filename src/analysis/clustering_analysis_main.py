@@ -36,14 +36,10 @@ class clustering_analysis(Base):
 		self.job_id = job_id
 		self.data_path = os.path.join(self.root_path,'data')
 		self.ohlcv_path = os.path.join(self.data_path,'raw','OHLCV')
-		self.processed_path = os.path.join(self.data_path,'processed','FOB')
-		#self.processed_path_LOB = os.path.join(self.processed_path,'LOB')
-		self.processed_path_LOB = os.path.join(self.root_path,'results','clustering_evaluation') # data postpro evaluation
-		self.processed_path_FO = os.path.join(self.processed_path,'FO')
-		self.results_path = os.path.join(self.root_path,'results','clustering')
+		self.results_path = os.path.join(self.root_path,'results','clustering_evaluation')
 		self.results_path_analysis = os.path.join(self.root_path,'results','clustering_analysis')
-		self.results_path_LOB = os.path.join(self.results_path,'LOB')
-		self.results_path_FO = os.path.join(self.results_path,'FO')
+		self.results_path_LOB = self.results_path
+		self.results_path_FO = self.results_path
 		self.LOB = None
 		self.FO = None
 		self.filename_results = None
@@ -94,7 +90,6 @@ class clustering_analysis(Base):
 		self.df_ohlcv = self.df_ohlcv.set_index('Local Time').between_time('9:00', '17:30').reset_index()
 		
 		self.df_data = pd.read_parquet(self.to_process['path'])
-		print(self.to_process['path'])
 		self.df_data = self.df_data.set_index('index').between_time('9:00', '17:00').reset_index()
 		self.df_data = self.df_data[self.df_data['err'].isin([0,1])]
 		
