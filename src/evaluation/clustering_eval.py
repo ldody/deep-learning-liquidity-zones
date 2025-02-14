@@ -70,9 +70,9 @@ class evaluation(Base):
 			
 			if (chunk['err'] == 1).any():
 				for i in range(len(chunk[chunk['err'] == 1])):
-					chunk.loc[chunk['err'].shift(-1) == 1, 'err'] = 'to_del'
+					chunk.loc[chunk['err'].shift(-1) == 1, 'err'] = 10
 
-			self.data.loc[self.data.index, ['gap_min','gap_max','err']] = self.data[['gap_min','gap_max','err']]
+			self.data.loc[self.data.index, ['gap_min','gap_max','err']] = chunk[['gap_min','gap_max','err']]
 			
 		s = pd.Series([f.split('_')[0], n_overlap, n_overlap_nested, n_overlap_tot, n_clusters], index=['asset','overlap','overlap_nested','overlap_tot','clusters'])
 		self.results_df = pd.concat([self.results_df, s.to_frame().T], ignore_index=True)
