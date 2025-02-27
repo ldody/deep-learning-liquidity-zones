@@ -161,11 +161,11 @@ class regression(Base):
 		def func_prepro(i, row, lock):
 
 			with lock:
-				to_process = self.df_assets.loc[i]
-				print(to_process)
+				self.to_process = self.df_assets.loc[i]
 				self.load_data()
 				df_data = self.df_data.copy()
 				df_ohlcv = self.df_ohlcv.copy()
+				to_process = self.to_process.copy()
 			
 			data, ohlcv, n_interval, scaler_p, scaler_v, scaler_r, scaler_nb = rprepro.preprocessing(df_data, df_ohlcv, to_process['1min'])
 
