@@ -162,6 +162,7 @@ class regression(Base):
 
 			with lock:
 				to_process = self.df_assets.loc[i]
+				print(to_process)
 				self.load_data()
 				df_data = self.df_data.copy()
 				df_ohlcv = self.df_ohlcv.copy()
