@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import argparse
 from joblib import Parallel, delayed
+import multiprocessing
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 tf.config.threading.set_intra_op_parallelism_threads(60)
@@ -141,9 +142,9 @@ class regression(Base):
 		"""
 		self.get_files()
 		
-		def func_prepro(i, row):
-			
-			arrays_dict = {'x_train': [],
+		lock = multiprocessing.Lock()
+		
+		arrays_dict = {'x_train': [],
 					  'x_test': [],
 					  'y_train': [],
 					  'y_test': [],
@@ -153,27 +154,29 @@ class regression(Base):
 					  'scaler_v': [],
 					  'scaler_r': [],
 					  'scaler_nb': []}
+		
+		def func_prepro(i, row):
+
+			with lock:
+				to_process = self.df_assets.loc[i]
+				self.load_data()
+				df_data = self.df_data.copy()
+				df_ohlcv = self.df_ohlcv.copy()
 			
-			self.to_process = self.df_assets.loc[i]
-			self.load_data()
-			data, ohlcv, n_interval, scaler_p, scaler_v, scaler_r, scaler_nb = self.prepro.preprocessing(self.df_data, self.df_ohlcv, self.to_process['1min'])
+			data, ohlcv, n_interval, scaler_p, scaler_v, scaler_r, scaler_nb = rprepro.preprocessing(df_data, df_ohlcv, to_process['1min'])
 
 			x_train, x_test, y_train, y_test = train_test_split(ohlcv, data, test_size=0.3, shuffle=False)
 			_, _, n_train, n_test = train_test_split(ohlcv, n_interval, test_size=0.3, shuffle=False)
 			
-			for key in arrays_dict:
-				print(globals()[key])
-				arrays_dict[d].append(globals()[key])
+			with lock:
+				for key in arrays_dict:
+					arrays_dict[d].append(globals()[key])
+
 				
-			return arrays_dict
-				
-		res = Parallel(n_jobs=-1)(delayed(func_prepro)(i, row) for i, row in self.df_assets.iterrows())
-			
-		data_df = pd.concat([pd.Dataframe(d) for d in res], axis=0)
+		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row) for i, row in self.df_assets.iterrows())
+
 		
-		arrays_dict = {}
-		
-		for key, arrays in data_df.to_dict().items():
+		for key, arrays in arrays_dict.items():
 			arrays_dict[key] = np.concatenate(arrays, axis=0)
 			
 		train_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"num_clusters": arrays_dict['n_train'], "bounds": arrays_dict['y_train'][:,:,:2], "ranks": arrays_dict['y_train'][:,:,-1]}))
