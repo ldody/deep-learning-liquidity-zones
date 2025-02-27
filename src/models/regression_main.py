@@ -167,7 +167,7 @@ class regression(Base):
 				df_ohlcv = self.df_ohlcv.copy()
 				to_process = self.to_process.copy()
 			
-			data, ohlcv, n_interval, scaler_p, scaler_v, scaler_r, scaler_nb = rprepro.preprocessing(df_data, df_ohlcv, to_process['1min'])
+			data, ohlcv, n_interval, scaler_p, scaler_v, scaler_r, scaler_nb = rprepro().preprocessing(df_data=df_data, df_ohlcv=df_ohlcv, new_var=to_process['1min'])
 
 			x_train, x_test, y_train, y_test = train_test_split(ohlcv, data, test_size=0.3, shuffle=False)
 			_, _, n_train, n_test = train_test_split(ohlcv, n_interval, test_size=0.3, shuffle=False)
