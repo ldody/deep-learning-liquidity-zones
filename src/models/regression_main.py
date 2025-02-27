@@ -177,17 +177,15 @@ class regression(Base):
 			_, _, n_train, n_test = train_test_split(ohlcv, n_interval, test_size=0.3, shuffle=False)
 			
 			with lock:
-				for key in arrays_dict:
-					if key not in arrays_dict:
-						arrays_dict[key] = []
+				for key in dict(arrays_dict):
 						
-					updated_list = arrays_dict[0]
+					updated_list = arrays_dict[key]
 					updated_list.append(locals()[key])
-					arrays_dict[0] = updated_list
+					arrays_dict[key] = updated_list
 
-		print(arrays_dict)
 		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock, arrays_dict) for i, row in self.df_assets.iterrows())
-
+		
+		arrays_dict = dict(arrays_dict)
 		print(arrays_dict)
 		print(pd.DataFrame(arrays_dict))
 		for key, arrays in arrays_dict.items():
