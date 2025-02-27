@@ -10,6 +10,8 @@ import tensorflow as tf
 tf.config.threading.set_intra_op_parallelism_threads(60)
 tf.config.threading.set_inter_op_parallelism_threads(60)
 tf.random.set_seed(42)
+		
+lock = multiprocessing.Lock()
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from regression_ANN import ANN_model as ANNmodel
@@ -142,8 +144,6 @@ class regression(Base):
 		"""
 		self.get_files()
 		
-		lock = multiprocessing.Lock()
-		
 		arrays_dict = {'x_train': [],
 					  'x_test': [],
 					  'y_train': [],
@@ -155,7 +155,7 @@ class regression(Base):
 					  'scaler_r': [],
 					  'scaler_nb': []}
 		
-		def func_prepro(i, row):
+		def func_prepro(i, row, lock):
 
 			with lock:
 				to_process = self.df_assets.loc[i]
@@ -173,7 +173,7 @@ class regression(Base):
 					arrays_dict[d].append(globals()[key])
 
 				
-		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row) for i, row in self.df_assets.iterrows())
+		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock) for i, row in self.df_assets.iterrows())
 
 		
 		for key, arrays in arrays_dict.items():
