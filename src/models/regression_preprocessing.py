@@ -111,7 +111,7 @@ class RegressionPreprocess(Base):
 		try:
 			sequences_data = np.array(sequences_data)
 		except:
-			print(len(sequences_data))
+			print('ERROR !!!!!', len(sequences_data))
 			sys.exit()
 			
 			
