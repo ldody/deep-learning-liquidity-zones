@@ -185,6 +185,7 @@ class regression(Base):
 		model.fit(train_dataset, 
 				  epochs=1000,  
 				  verbose=2, 
+				  validation_split=0.3,
 				  callbacks=[csv_logger])
 				  
 		model.save(os.path.join(self.path, 'ANN_model.keras'))
