@@ -1,5 +1,6 @@
 # import packages
 import os, sys
+import warnings
 import pandas as pd
 import numpy as np
 import argparse
@@ -10,6 +11,8 @@ import tensorflow as tf
 tf.config.threading.set_intra_op_parallelism_threads(60)
 tf.config.threading.set_inter_op_parallelism_threads(60)
 tf.random.set_seed(42)
+
+warnings.simplefilter(action='ignore', category=Warning)
 		
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from regression_ANN import ANN_model as ANNmodel
@@ -144,10 +147,9 @@ class regression(Base):
 		
 
 		manager = multiprocessing.Manager()
-		shared_resource = manager.list()
 		lock = manager.Lock()
 		
-		arrays_dict = {'x_train': [],
+		arrays_dict = manager.{'x_train': [],
 					  'x_test': [],
 					  'y_train': [],
 					  'y_test': [],
