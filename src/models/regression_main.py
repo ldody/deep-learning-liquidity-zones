@@ -13,6 +13,8 @@ tf.config.threading.set_inter_op_parallelism_threads(60)
 tf.random.set_seed(42)
 
 warnings.simplefilter(action='ignore', category=Warning)
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 		
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from regression_ANN import ANN_model as ANNmodel
@@ -160,7 +162,7 @@ class regression(Base):
 					  'scaler_r': [],
 					  'scaler_nb': []})
 		
-		def func_prepro(i, row, lock):
+		def func_prepro(i, row, lock, arrays_dict):
 
 			with lock:
 				self.to_process = self.df_assets.loc[i]
@@ -176,7 +178,12 @@ class regression(Base):
 			
 			with lock:
 				for key in arrays_dict:
-					arrays_dict[key].append(locals()[key])
+					if key not in arrays_dict:
+						arrays_dict[key] = []
+						
+					updated_list = arrays_dict[0]
+					updated_list.append(locals()[key])
+					arrays_dict[0] = updated_list
 
 				
 		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock) for i, row in self.df_assets.iterrows())
