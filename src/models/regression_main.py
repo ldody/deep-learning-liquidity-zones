@@ -11,8 +11,6 @@ tf.config.threading.set_intra_op_parallelism_threads(60)
 tf.config.threading.set_inter_op_parallelism_threads(60)
 tf.random.set_seed(42)
 		
-lock = multiprocessing.Lock()
-
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from regression_ANN import ANN_model as ANNmodel
 from regression_preprocessing import RegressionPreprocess as rprepro
@@ -143,6 +141,11 @@ class regression(Base):
 		Only one model built.
 		"""
 		self.get_files()
+		
+
+		manager = multiprocessing.Manager()
+		shared_resource = manager.list()
+		lock = manager.Lock()
 		
 		arrays_dict = {'x_train': [],
 					  'x_test': [],
