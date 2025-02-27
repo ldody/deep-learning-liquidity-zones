@@ -186,7 +186,7 @@ class regression(Base):
 					arrays_dict[0] = updated_list
 
 				
-		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock) for i, row in self.df_assets.iterrows())
+		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock, arrays_dict) for i, row in self.df_assets.iterrows())
 
 		print(arrays_dict)
 		print(pd.DataFrame(arrays_dict))
