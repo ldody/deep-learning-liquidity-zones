@@ -98,15 +98,16 @@ class RegressionPreprocess(Base):
 		index_todelete = []
 		
 		for i, t in enumerate([date[-1,0] for date in sequences_ohlcv]):
-			'''
+			
 			if len(df_data[df_data['index'] == t]) == 0:
 				index_todelete.append(i)
-				continue'''
+				continue
 
 			sequences_data.append(df_data[df_data['index'] == t].to_numpy())
 			sequences_n_interval.append(float(df_data.loc[df_data['index'] == t, 'rank_size'].max()))
 		
-		#sequences_ohlcv = np.delete(sequences_ohlcv, index_todelete, axis=0)
+		sequences_ohlcv = np.delete(sequences_ohlcv, index_todelete, axis=0)
+		
 		try:
 			sequences_data = np.array(sequences_data)
 		except:
