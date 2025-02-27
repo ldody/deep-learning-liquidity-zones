@@ -69,8 +69,8 @@ class RegressionPreprocess(Base):
 			return group
 		
 		df_data = df_data.groupby('index', group_keys=False).apply(fill_lines)
-		df_ohlcv['Volume'].fillna(0, inplace=True)
-		df_ohlcv['Close'].ffill(inplace=True)
+		df_ohlcv['Volume'] = df_ohlcv['Volume'].fillna(0)
+		df_ohlcv['Close'] = df_ohlcv['Close'].ffill()
 		df_ohlcv = df_ohlcv.bfill(axis=1)
 		
 		ohlcv, data, n_interval = self.prepare_sequences(df_ohlcv, df_data)
