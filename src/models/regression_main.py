@@ -174,7 +174,7 @@ class regression(Base):
 			
 			with lock:
 				for key in arrays_dict:
-					arrays_dict[d].append(globals()[key])
+					arrays_dict[key].append(locals()[key])
 
 				
 		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock) for i, row in self.df_assets.iterrows())
