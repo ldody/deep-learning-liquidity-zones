@@ -162,6 +162,7 @@ class regression(Base):
 			_, _, n_train, n_test = train_test_split(ohlcv, n_interval, test_size=0.3, shuffle=False)
 			
 			for key in arrays_dict:
+				print(globals()[key])
 				arrays_dict[d].append(globals()[key])
 				
 			return arrays_dict
