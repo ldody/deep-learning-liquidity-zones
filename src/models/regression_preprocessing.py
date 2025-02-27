@@ -91,9 +91,14 @@ class RegressionPreprocess(Base):
 		for i in range(len(df_ohlcv) - window_size + 1):
 			sequences_ohlcv.append(df_ohlcv.to_numpy()[i : i + window_size])
 		
-		print(df_ohlcv)
-		print(sequences_ohlcv)
-		sequences_ohlcv = np.array(sequences_ohlcv)
+		
+		try:
+			sequences_ohlcv = np.array(sequences_ohlcv)
+		except:
+			print(df_ohlcv)
+			print(sequences_ohlcv)
+			sys.exit()
+		
 		
 		sequences_data = []
 		sequences_n_interval = []
