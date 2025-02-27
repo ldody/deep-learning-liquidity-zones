@@ -18,7 +18,7 @@ class RegressionPreprocess(Base):
 	Args:
 		job_id (int, optionnal): Slurm job ID.
 	"""
-	def __init__(self, job_id: int = 0, resampling_unit: str = 'min', n_pred: int = 10):
+	def __init__(self, job_id: int = 0, var: float = 1.0, n_pred: int = 10):
 		"""
 		Initializes the FOBPreprocessor instance.
 		
@@ -49,12 +49,14 @@ class RegressionPreprocess(Base):
 			self.root_path =  os.path.dirname(self.root_path)
 			
 		self.n_pred = n_pred
+		self.var = var
 		
-	def preprocessing(self, df_data, df_ohlcv):
+	def preprocessing(self, df_data, df_ohlcv, new_var):
 		'''
 		Preprocessing LOB/FO data and OHLCV for CNN 2D model.
 		'''
-		df_data = df_data.groupby('index', group_keys=False).apply(lambda group: group.nlargest(self.n_pred, 'density'))[['index', 'price_min', 'price_max', 'size']]
+		self.var = new_var
+		df_data = df_data.loc[df_data['rank_size'] <= 10, ['index', 'price_min', 'price_max', 'rank_size']]
 		
 		def fill_lines(group):
 			missing_lines = self.n_pred - len(group)
@@ -62,7 +64,7 @@ class RegressionPreprocess(Base):
 				additional_lines = pd.DataFrame({
 					'index': [group['index'].iloc[0]] * missing_lines
 				})
-				additional_lines[['price_min', 'price_max', 'size']] = 0
+				additional_lines[['price_min', 'price_max', 'rank_size']] = 0
 				return pd.concat([group, additional_lines], ignore_index=True)
 			return group
 		
@@ -73,12 +75,14 @@ class RegressionPreprocess(Base):
 		
 		ohlcv, data, n_interval = self.prepare_sequences(df_ohlcv, df_data)
 		
-		scaled_ohlcv, scaled_data, ls_scaler_p, ls_scaler_v = self.scaling(ohlcv, data)
+		scaled_ohlcv, scaled_data, ls_scaler_p, ls_scaler_v, scaler_r, scaler_nb = self.scaling(ohlcv, data)
 		
-		return scaled_data, scaled_ohlcv, n_interval, ls_scaler_p, ls_scaler_v
+		n_interval = scaler_nb.transform(n_interval.reshape(-1, 1))
+		
+		return scaled_data, scaled_ohlcv, n_interval, ls_scaler_p, ls_scaler_v, scaler_r, scaler_nb
 		
 
-	def prepare_sequences(self, df_ohlcv, df_data, window_size : int=100):
+	def prepare_sequences(self, df_ohlcv, df_data, window_size: int=100):
 		'''
 		Preparing the sequences.
 		'''
@@ -94,14 +98,15 @@ class RegressionPreprocess(Base):
 		index_todelete = []
 		
 		for i, t in enumerate([date[-1,0] for date in sequences_ohlcv]):
+			'''
 			if len(df_data[df_data['index'] == t]) == 0:
 				index_todelete.append(i)
-				continue
+				continue'''
 
 			sequences_data.append(df_data[df_data['index'] == t].to_numpy())
-			sequences_n_interval.append(float(len(df_data[(df_data['index'] == t) & (df_data['size'] != 0)])))
+			sequences_n_interval.append(float(df_data.loc[df_data['index'] == t, 'rank_size'].max()))
 		
-		sequences_ohlcv = np.delete(sequences_ohlcv, index_todelete, axis=0)
+		#sequences_ohlcv = np.delete(sequences_ohlcv, index_todelete, axis=0)
 		sequences_data = np.array(sequences_data)
 		sequences_n_interval = np.array(sequences_n_interval)
 		
@@ -117,11 +122,18 @@ class RegressionPreprocess(Base):
 		scaled_ohlcv = []
 		scaled_data = []
 		
+		scaler_rank = MinMaxScaler(feature_range=(0, 1)).fit(np.array([1,self.n_pred]).reshape(-1,1))
+		scaler_nb = MinMaxScaler(feature_range=(0, 1)).fit(np.array([0,self.n_pred]).reshape(-1,1))
+		
 		for seq_ohlcv, seq_data in zip(ohlcv, data):
-			scaler_price = MinMaxScaler()
-			scaler_volume = MinMaxScaler()
+			scaler_price = MinMaxScaler(feature_range=(0, 1))
+			scaler_volume = MinMaxScaler(feature_range=(0, 1))
 			
-			scaler_price.fit(seq_ohlcv[:,1:5].flatten().reshape(-1, 1))
+			price_offset = np.full(3, seq_ohlcv[-1,1])
+			price_offset[0] += self.var
+			price_offset[1] -= self.var
+			
+			scaler_price.fit(price_offset.reshape(-1, 1))
 			scaler_volume.fit(seq_ohlcv[:,5].reshape(-1, 1))
 			
 			ls_scaler_price.append(scaler_price)
@@ -138,7 +150,7 @@ class RegressionPreprocess(Base):
 			for col in range(1,3):
 				scaled_seq_data[:,col] = scaler_price.transform(seq_data[:,col].reshape(-1,1)).squeeze()
 				
-			scaled_seq_data[:,3] = scaler_volume.transform(seq_data[:,3].reshape(-1,1)).squeeze()
+			scaled_seq_data[:,3] = scaler_rank.transform(seq_data[:,3].reshape(-1,1)).squeeze()
 			
 			scaled_ohlcv.append(scaled_seq_ohlcv)
 			scaled_data.append(scaled_seq_data)
@@ -146,4 +158,4 @@ class RegressionPreprocess(Base):
 		scaled_ohlcv = np.array(scaled_ohlcv, dtype=np.float32)[:,:,1:]
 		scaled_data = np.array(scaled_data, dtype=np.float32)[:,:,1:]
 		
-		return scaled_ohlcv, scaled_data, ls_scaler_price, ls_scaler_volume
+		return scaled_ohlcv, scaled_data, ls_scaler_price, ls_scaler_volume, scaler_rank, scaler_nb
