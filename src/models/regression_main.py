@@ -179,7 +179,8 @@ class regression(Base):
 				
 		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock) for i, row in self.df_assets.iterrows())
 
-		
+		print(arrays_dict)
+		print(pd.DataFrame(arrays_dict))
 		for key, arrays in arrays_dict.items():
 			arrays_dict[key] = np.concatenate(arrays, axis=0)
 			
