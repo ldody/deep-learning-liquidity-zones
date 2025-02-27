@@ -111,7 +111,7 @@ class RegressionPreprocess(Base):
 			sequences_data = np.array(sequences_data)
 		except:
 			print(df_data)
-			print(sequences_data)
+			print(len(sequences_data))
 			sys.exit()
 			
 			
