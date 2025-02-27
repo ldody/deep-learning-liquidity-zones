@@ -149,7 +149,7 @@ class regression(Base):
 		manager = multiprocessing.Manager()
 		lock = manager.Lock()
 		
-		arrays_dict = manager.{'x_train': [],
+		arrays_dict = manager.dict({'x_train': [],
 					  'x_test': [],
 					  'y_train': [],
 					  'y_test': [],
@@ -158,7 +158,7 @@ class regression(Base):
 					  'scaler_p': [],
 					  'scaler_v': [],
 					  'scaler_r': [],
-					  'scaler_nb': []}
+					  'scaler_nb': []})
 		
 		def func_prepro(i, row, lock):
 
