@@ -166,7 +166,7 @@ class regression(Base):
 				
 			return arrays_dict
 				
-		res = Parallel(n_jobs=-1)(delayed(func_prepro)(i, row) for i, row in df.iterrows())
+		res = Parallel(n_jobs=-1)(delayed(func_prepro)(i, row) for i, row in self.df_assets.iterrows())
 			
 		data_df = pd.concat([pd.Dataframe(d) for d in res], axis=0)
 		
