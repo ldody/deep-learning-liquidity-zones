@@ -91,14 +91,7 @@ class RegressionPreprocess(Base):
 		for i in range(len(df_ohlcv) - window_size + 1):
 			sequences_ohlcv.append(df_ohlcv.to_numpy()[i : i + window_size])
 		
-		
-		try:
-			sequences_ohlcv = np.array(sequences_ohlcv)
-		except:
-			print(df_ohlcv)
-			print(sequences_ohlcv)
-			sys.exit()
-		
+		sequences_ohlcv = np.array(sequences_ohlcv)
 		
 		sequences_data = []
 		sequences_n_interval = []
@@ -114,7 +107,14 @@ class RegressionPreprocess(Base):
 			sequences_n_interval.append(float(df_data.loc[df_data['index'] == t, 'rank_size'].max()))
 		
 		#sequences_ohlcv = np.delete(sequences_ohlcv, index_todelete, axis=0)
-		sequences_data = np.array(sequences_data)
+		try:
+			sequences_data = np.array(sequences_data)
+		except:
+			print(df_data)
+			print(sequences_data)
+			sys.exit()
+			
+			
 		sequences_n_interval = np.array(sequences_n_interval)
 		
 		return sequences_ohlcv, sequences_data, sequences_n_interval
