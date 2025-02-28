@@ -191,8 +191,7 @@ class regression(Base):
 			try:
 				arrays_dict[key] = np.concatenate(arrays, axis=0)
 			except:
-				print(key, arrays)
-				sys.exit()
+				pass
 			
 		train_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"num_clusters": arrays_dict['n_train'], "bounds": arrays_dict['y_train'][:,:,:2], "ranks": arrays_dict['y_train'][:,:,-1]}))
 		train_dataset = train_dataset.batch(64).prefetch(tf.data.AUTOTUNE)    
