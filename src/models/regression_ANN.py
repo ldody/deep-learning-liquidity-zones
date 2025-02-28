@@ -98,7 +98,7 @@ class ANN_model():
 		# === 6. Projection & Transformer ===
 		merged_features = tf.keras.layers.Concatenate()([cnn_features, lstm_features])
 		merged_features = Dense(256, activation="relu")(merged_features)
-		merged_features = tf.expand_dims(merged_features, axis=1)  # Add time dimension for Transformer
+		merged_features = Reshape((1, merged_features.shape[-1]))(merged_features)  # Add time dimension for Transformer
 		transformed_features = transformer_block(merged_features)
 
 		# === 7. Outputs ===
