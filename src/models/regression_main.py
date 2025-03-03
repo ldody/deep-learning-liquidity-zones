@@ -194,8 +194,9 @@ class regression(Base):
 				pass
 			
 		
-		
 		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"num_clusters": arrays_dict['n_train'], "bounds": arrays_dict['y_train'][:,:,:2], "ranks": arrays_dict['y_train'][:,:,-1]}))
+		
+		print(pd.DataFrame(arrays_dict['y_train'][:,:,:2]))
 		
 		val_size = int(dataset.cardinality().numpy() * 0.3)
 		
