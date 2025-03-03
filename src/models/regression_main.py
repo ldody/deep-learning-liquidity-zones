@@ -196,8 +196,6 @@ class regression(Base):
 		
 		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"num_clusters": arrays_dict['n_train'], "bounds": arrays_dict['y_train'][:,:,:2], "ranks": arrays_dict['y_train'][:,:,-1]}))
 		
-		print(pd.DataFrame(arrays_dict['y_train'][:,:,:2]))
-		
 		val_size = int(dataset.cardinality().numpy() * 0.3)
 		
 		train_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
@@ -206,6 +204,8 @@ class regression(Base):
 		test_dataset = test_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		
 		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
+		
+		print(model.describe())
 		
 		csv_logger_train = tf.keras.callbacks.CSVLogger('training_combined_log.csv')
 		csv_logger_eval = tf.keras.callbacks.CSVLogger('eval_combined_log.csv')
