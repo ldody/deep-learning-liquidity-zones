@@ -152,13 +152,10 @@ class regression(Base):
 		lock = manager.Lock()
 		
 		arrays_dict = manager.dict({'x_train': [],
-					  'x_eval': [],
 					  'x_test': [],
 					  'y_train': [],
-					  'y_eval': [],
 					  'y_test': [],
 					  'n_train': [],
-					  'n_eval': [],
 					  'n_test': [],
 					  'scaler_p': [],
 					  'scaler_v': [],
@@ -179,9 +176,6 @@ class regression(Base):
 			x_train, x_test, y_train, y_test = train_test_split(ohlcv, data, test_size=0.3, shuffle=False)
 			_, _, n_train, n_test = train_test_split(ohlcv, n_interval, test_size=0.3, shuffle=False)
 			
-			x_train, x_eval, y_train, y_eval = train_test_split(x_train, y_train, test_size=0.3, shuffle=False)
-			_, _, n_train, n_eval = train_test_split(x_train, n_train, test_size=0.3, shuffle=False)
-			
 			with lock:
 				for key in dict(arrays_dict):
 						
@@ -199,11 +193,15 @@ class regression(Base):
 			except:
 				pass
 			
-		train_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"num_clusters": arrays_dict['n_train'], "bounds": arrays_dict['y_train'][:,:,:2], "ranks": arrays_dict['y_train'][:,:,-1]}))
-		train_dataset = train_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		
-		eval_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_eval'], {"num_clusters": arrays_dict['n_eval'], "bounds": arrays_dict['y_eval'][:,:,:2], "ranks": arrays_dict['y_eval'][:,:,-1]}))
-		eval_dataset = train_dataset.batch(64).prefetch(tf.data.AUTOTUNE) 
+		
+		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"num_clusters": arrays_dict['n_train'], "bounds": arrays_dict['y_train'][:,:,:2], "ranks": arrays_dict['y_train'][:,:,-1]}))
+		
+		val_size = int(dataset.cardinality().numpy() * 0.3)
+		
+		train_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
+		eval_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
+ 
 		
 		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
 		
