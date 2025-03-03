@@ -205,7 +205,7 @@ class regression(Base):
 		
 		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
 		
-		print(model.describe())
+		print(model.summary())
 		
 		csv_logger_train = tf.keras.callbacks.CSVLogger('training_combined_log.csv')
 		csv_logger_eval = tf.keras.callbacks.CSVLogger('eval_combined_log.csv')
