@@ -211,7 +211,7 @@ class regression(Base):
 		csv_logger_eval = tf.keras.callbacks.CSVLogger('eval_combined_log.csv')
 		csv_logger_test = tf.keras.callbacks.CSVLogger('test_combined_log.csv')
 		
-		model.fit(train_dataset, 
+		model.fit(dataset, 
 				  epochs=1000,  
 				  verbose=2,
 				  callbacks=[csv_logger_train])
