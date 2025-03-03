@@ -201,19 +201,24 @@ class regression(Base):
 		
 		train_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
 		eval_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
- 
+		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"num_clusters": arrays_dict['n_test'], "bounds": arrays_dict['y_test'][:,:,:2], "ranks": arrays_dict['y_test'][:,:,-1]}))
+		test_dataset = test_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		
 		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
 		
-		csv_logger = tf.keras.callbacks.CSVLogger('training_combined_log.csv')
+		csv_logger_train = tf.keras.callbacks.CSVLogger('training_combined_log.csv')
+		csv_logger_eval = tf.keras.callbacks.CSVLogger('eval_combined_log.csv')
+		csv_logger_test = tf.keras.callbacks.CSVLogger('test_combined_log.csv')
 		
 		model.fit(train_dataset, 
 				  epochs=1000,  
-				  verbose=2, 
-				  validation_data=eval_dataset,
-				  callbacks=[csv_logger])
+				  verbose=2,
+				  callbacks=[csv_logger_train])
 				  
 		model.save(os.path.join(self.path, 'ANN_model.keras'))
+		
+		model.predict(eval_dataset, callbacks=[csv_logger_eval])
+		model.predict(test_dataset, callbacks=[csv_logger_test])
 				  
 #convert str to bool for argparse
 def str2bool(v):
