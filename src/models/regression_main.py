@@ -202,6 +202,7 @@ class regression(Base):
 		eval_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
 		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"num_clusters": arrays_dict['n_test'], "bounds": arrays_dict['y_test'][:,:,:2], "ranks": arrays_dict['y_test'][:,:,-1]}))
 		test_dataset = test_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
+		dataset = dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		
 		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
 		
