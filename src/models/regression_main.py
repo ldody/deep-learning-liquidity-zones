@@ -98,7 +98,7 @@ class regression(Base):
 		"""
 		Loading data.
 		"""
-		self.df_ohlcv = pd.read_csv(self.to_process['OHLCV'])[:500]
+		self.df_ohlcv = pd.read_csv(self.to_process['OHLCV'])
 		self.df_ohlcv['Local Time'] = pd.to_datetime(self.df_ohlcv['Local Time'])
 		self.df_ohlcv = self.df_ohlcv.set_index('Local Time').between_time('9:00', '17:00').reset_index()
 		#self.df_ohlcv = self.df_ohlcv['Volume' not in self.df_ohlcv.columns]
@@ -209,16 +209,6 @@ class regression(Base):
 		csv_logger_train = tf.keras.callbacks.CSVLogger('training_combined_log.csv')
 		csv_logger_eval = tf.keras.callbacks.CSVLogger('eval_combined_log.csv')
 		csv_logger_test = tf.keras.callbacks.CSVLogger('test_combined_log.csv')
-		
-		print('xtrain',arrays_dict['x_train'].shape)
-		print('num_clust',arrays_dict['n_train'].shape)
-		print('bounds',arrays_dict['y_train'][:,:,:2].shape)
-		print('ranks',arrays_dict['y_train'][:,:,-1].shape)
-		
-		for x_batch, y_batch in dataset.take(1):
-			print("Shape de x_batch:", x_batch.shape)
-			for key, value in y_batch.items():
-				print(f"Shape de {key}:", value.shape)
 		
 		model.fit(train_dataset, 
 				  epochs=1000,  

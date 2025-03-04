@@ -119,7 +119,9 @@ class ANN_model():
 					  loss={"num_clusters": "sparse_categorical_crossentropy", 
 							"bounds": self.bounds_loss, 
 							"ranks": self.rank_loss},
-					  metrics={"num_clusters": ["mae",'accuracy'], "bounds": "MAE", "ranks": ["mae",'accuracy']}, 
+					  metrics={"num_clusters": ["mae",'accuracy'], 
+							   "bounds": "MAE", 
+							   "ranks": ["mae",'accuracy']}, 
 					  loss_weights={'num_clusters': 0.5, 'bounds': 1.0, 'ranks': 0.5})
 					  
 		return model
@@ -130,9 +132,6 @@ class ANN_model():
 		number of clusters output loss function of the model.
 		"""
 		mask = tf.greater(y_true, 0)
-		
-		print('y_true', y_true.shape)
-		print('y_pred', y_pred.shape)
 		
 		# selecting only real clusters
 		y_true_filtered = tf.boolean_mask(y_true, mask)
