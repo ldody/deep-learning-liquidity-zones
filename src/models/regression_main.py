@@ -210,6 +210,11 @@ class regression(Base):
 		csv_logger_eval = tf.keras.callbacks.CSVLogger('eval_combined_log.csv')
 		csv_logger_test = tf.keras.callbacks.CSVLogger('test_combined_log.csv')
 		
+		print('xtrain',arrays_dict['x_train'].shape)
+		print('num_clust',arrays_dict['n_train'].shape)
+		print('bounds',arrays_dict['y_train'][:,:,:2].shape)
+		print('ranks',arrays_dict['y_train'][:,:,-1].shape)
+		
 		model.fit(dataset, 
 				  epochs=1000,  
 				  verbose=2,
