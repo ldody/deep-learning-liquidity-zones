@@ -108,7 +108,13 @@ class ANN_model():
 		ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
 		
 		# === 8. Build & Compile Model ===
-		model = Model(inputs=input_lstm, outputs=[num_clusters_output, bounds_output, ranks_output])
+		model = Model(inputs=input_lstm, 
+					  outputs={"num_clusters": num_clusters_output, 
+							   "bounds": bounds_output, 
+							   "ranks": ranks_output}
+							   )
+		
+		
 		model.compile(optimizer="adam", 
 					  loss={"num_clusters": "sparse_categorical_crossentropy", 
 							"bounds": self.bounds_loss, 
