@@ -124,7 +124,10 @@ class ANN_model():
 		number of clusters output loss function of the model.
 		"""
 		mask = tf.greater(y_true, 0)
-
+		
+		print('y_true', y_true.shape)
+		print('y_pred', y_pred.shape)
+		
 		# selecting only real clusters
 		y_true_filtered = tf.boolean_mask(y_true, mask)
 		y_pred_filtered = tf.boolean_mask(y_pred, mask)
