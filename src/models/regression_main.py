@@ -198,7 +198,7 @@ class regression(Base):
 		
 		val_size = int(dataset.cardinality().numpy() * 0.3)
 		
-		train_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
+		train_dataset = dataset.take(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
 		eval_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
 		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"num_clusters": arrays_dict['n_test'], "bounds": arrays_dict['y_test'][:,:,:2], "ranks": arrays_dict['y_test'][:,:,-1]}))
 		test_dataset = test_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
@@ -220,9 +220,10 @@ class regression(Base):
 			for key, value in y_batch.items():
 				print(f"Shape de {key}:", value.shape)
 		
-		model.fit(dataset, 
+		model.fit(train_dataset, 
 				  epochs=1000,  
 				  verbose=2,
+				  validation_data=eval_dataset,
 				  callbacks=[csv_logger_train])
 				  
 		model.save(os.path.join(self.path, 'ANN_model.keras'))
