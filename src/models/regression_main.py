@@ -215,6 +215,11 @@ class regression(Base):
 		print('bounds',arrays_dict['y_train'][:,:,:2].shape)
 		print('ranks',arrays_dict['y_train'][:,:,-1].shape)
 		
+		for x_batch, y_batch in dataset.take(1):
+			print("Shape de x_batch:", x_batch.shape)
+			for key, value in y_batch.items():
+				print(f"Shape de {key}:", value.shape)
+		
 		model.fit(dataset, 
 				  epochs=1000,  
 				  verbose=2,
