@@ -130,14 +130,27 @@ class regression(Base):
 		print("bounds_train dtype:", y_train.dtype, "shape:", y_train.shape)
 		print("rank dtype:", y_train[:,:,-1].dtype, "shape:", y_train[:,:,-1].shape)
 		
-		csv_logger = tf.keras.callbacks.CSVLogger('training_log.csv')
+		csv_logger = tf.keras.callbacks.CSVLogger('training_log.csv', append=True)
+		checkpoint_callback = tf.keras.callbacks.ModelCheckpoint('last_checkpoint.keras', 
+																 save_weights_only=False,
+																 save_best_only=False,
+																 save_freq="epoch",
+																 verbose=1)
+																 
+		if 'training_log.csv' is in os.listdir(self.path):
+			last_epoch = pd.read_csv(os.path.join(os.listdir(self.path), 'training_log.csv'))['epoch'].iloc[-1] + 1
+			
+			model = tf.keras.models.load_model(os.path.join(os.listdir(self.path), 'last_checkpoint.keras'))
 		
-		model = ANNmodel().model_build(input_shape = x_train.shape[1:], timesteps = self.prepro.n_pred)
+		else:
+			model = ANNmodel().model_build(input_shape = x_train.shape[1:], timesteps = self.prepro.n_pred)
+			last_epoch = 0
 
 		model.fit(train_dataset, 
 				  epochs=1000, 
 				  verbose=2, 
-				  callbacks=[csv_logger])
+				  initial_epoch=last_epoch,
+				  callbacks=[csv_logger, checkpoint_callback])
 				  
 				  
 	def combined_data_process(self):
@@ -204,15 +217,29 @@ class regression(Base):
 		test_dataset = test_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		dataset = dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		
-		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
+		csv_logger_train = tf.keras.callbacks.CSVLogger('training_combined_log.csv', append=True)
+		csv_logger_eval = tf.keras.callbacks.CSVLogger('eval_combined_log.csv', append=True)
+		csv_logger_test = tf.keras.callbacks.CSVLogger('test_combined_log.csv', append=True)
 		
-		csv_logger_train = tf.keras.callbacks.CSVLogger('training_combined_log.csv')
-		csv_logger_eval = tf.keras.callbacks.CSVLogger('eval_combined_log.csv')
-		csv_logger_test = tf.keras.callbacks.CSVLogger('test_combined_log.csv')
+		checkpoint_callback = tf.keras.callbacks.ModelCheckpoint('last_checkpoint.keras', 
+																 save_weights_only=False,
+																 save_best_only=False,
+																 save_freq="epoch",
+																 verbose=1)
+																 
+		if 'training_combined_log.csv' is in os.listdir(self.path):
+			last_epoch = pd.read_csv(os.path.join(os.listdir(self.path), 'training_log.csv'))['epoch'].iloc[-1] + 1
+			
+			model = tf.keras.models.load_model(os.path.join(os.listdir(self.path), 'last_checkpoint.keras'))
+		
+		else:
+			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
+			last_epoch = 0
 		
 		model.fit(train_dataset, 
 				  epochs=1000,  
 				  verbose=2,
+				  initial_epoch=last_epoch,
 				  validation_data=eval_dataset,
 				  callbacks=[csv_logger_train])
 				  

@@ -122,7 +122,7 @@ class ANN_model():
 					  metrics={"num_clusters": ["mae",'accuracy'], 
 							   "bounds": "MAE", 
 							   "ranks": ["mae",'accuracy']}, 
-					  loss_weights={'num_clusters': 0.5, 'bounds': 1.0, 'ranks': 0.5})
+					  loss_weights={'num_clusters': 0.5, 'bounds': 1.5, 'ranks': 0.5})
 					  
 		return model
 
