@@ -9,7 +9,7 @@
 #SBATCH --output=data_cleaning.out #/dev/null
 #SBATCH --job-name=data_cleaning
 #SBATCH --partition=c6420-ib100
-#SBATCH --nodelist=c6420-ib100-013
+#SBATCH --nodelist=c6420-ib100-019
 
 
 module purge
