@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks-per-node=60
-#SBATCH --mem-per-cpu=4000
+#SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=all
 #SBATCH --mail-user=leo.dody1@univ-lyon3.fr
 #SBATCH --output=data_cleaning.out #/dev/null
