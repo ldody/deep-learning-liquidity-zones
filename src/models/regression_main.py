@@ -227,7 +227,7 @@ class regression(Base):
 																 save_freq="epoch",
 																 verbose=1)
 																 
-		if 'training_combined_log.csv' is in os.listdir(self.path):
+		if all(x in os.listdir(self.path) for x in ['training_combined_log.csv','last_checkpoint.keras']):
 			last_epoch = pd.read_csv(os.path.join(os.listdir(self.path), 'training_log.csv'))['epoch'].iloc[-1] + 1
 			
 			model = tf.keras.models.load_model(os.path.join(os.listdir(self.path), 'last_checkpoint.keras'))
