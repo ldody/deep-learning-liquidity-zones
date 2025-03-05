@@ -8,7 +8,8 @@
 #SBATCH --mail-user=leo.dody1@univ-lyon3.fr
 #SBATCH --output=data_cleaning.out #/dev/null
 #SBATCH --job-name=data_cleaning
-#SBATCH --nodelist=c6420-ib100-005
+#SBATCH --partition=c6420-ib100
+#SBATCH --nodelist=c6420-ib100-013
 
 
 module purge
