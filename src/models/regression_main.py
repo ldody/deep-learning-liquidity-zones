@@ -241,7 +241,7 @@ class regression(Base):
 				  verbose=2,
 				  initial_epoch=last_epoch,
 				  validation_data=eval_dataset,
-				  callbacks=[csv_logger_train])
+				  callbacks=[csv_logger_train, checkpoint_callback])
 				  
 		model.save(os.path.join(self.path, 'ANN_model.keras'))
 		
