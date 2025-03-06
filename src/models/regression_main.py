@@ -122,7 +122,10 @@ class regression(Base):
 		x_train, x_test, y_train, y_test = train_test_split(ohlcv, data, test_size=0.3, shuffle=False)
 		_, _, n_train, n_test = train_test_split(ohlcv, n_interval, test_size=0.3, shuffle=False)
 		
-		train_dataset = tf.data.Dataset.from_tensor_slices((x_train, {"num_clusters": n_train, "bounds": y_train[:,:,:2], "ranks": y_train[:,:,-1]}))
+		train_dataset = tf.data.Dataset.from_tensor_slices((x_train, {#"num_clusters": n_train, 
+																	  "bounds": y_train[:,:,:2], 
+																	  #"ranks": y_train[:,:,-1]
+																	  }))
 		train_dataset = train_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		
 		print("X_train dtype:", x_train.dtype, "shape:", x_train.shape)
@@ -207,13 +210,19 @@ class regression(Base):
 				pass
 			
 		
-		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"num_clusters": arrays_dict['n_train'], "bounds": arrays_dict['y_train'][:,:,:2], "ranks": arrays_dict['y_train'][:,:,-1]}))
+		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {#"num_clusters": arrays_dict['n_train'], 
+																			   "bounds": arrays_dict['y_train'][:,:,:2], 
+																			   #"ranks": arrays_dict['y_train'][:,:,-1]
+																			   }))
 		
 		val_size = int(dataset.cardinality().numpy() * 0.3)
 		
 		train_dataset = dataset.take(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
 		eval_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
-		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"num_clusters": arrays_dict['n_test'], "bounds": arrays_dict['y_test'][:,:,:2], "ranks": arrays_dict['y_test'][:,:,-1]}))
+		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {#"num_clusters": arrays_dict['n_test'], 
+																				   "bounds": arrays_dict['y_test'][:,:,:2], 
+																				   #"ranks": arrays_dict['y_test'][:,:,-1]
+																				   }))
 		test_dataset = test_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		dataset = dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		
@@ -236,11 +245,11 @@ class regression(Base):
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
 			last_epoch = 0
 		
-		model.fit(train_dataset, 
+		model.fit(dataset, 
 				  epochs=1000,  
 				  verbose=2,
 				  initial_epoch=last_epoch,
-				  validation_data=eval_dataset,
+				  validation_data=test_dataset,
 				  callbacks=[csv_logger_train, checkpoint_callback])
 				  
 		model.save(os.path.join(self.path, 'ANN_model.keras'))

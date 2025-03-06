@@ -102,27 +102,31 @@ class ANN_model():
 		transformed_features = transformer_block(merged_features)
 
 		# === 7. Outputs ===
-		num_clusters_output = Dense(timesteps + 1, activation="softmax", name="num_clusters")(transformed_features[:, 0, :])  # Classification
+		#num_clusters_output = Dense(timesteps + 1, activation="softmax", name="num_clusters")(transformed_features[:, 0, :])  # Classification
 		bounds_output = Dense(2 * timesteps, activation="sigmoid")(transformed_features[:, 0, :])  # Regression
 		bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
-		ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
+		#ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
 		
 		# === 8. Build & Compile Model ===
 		model = Model(inputs=input_lstm, 
-					  outputs={"num_clusters": num_clusters_output, 
+					  outputs={#"num_clusters": num_clusters_output, 
 							   "bounds": bounds_output, 
-							   "ranks": ranks_output}
+							   #"ranks": ranks_output
+							   }
 							   )
 		
 		
 		model.compile(optimizer="adam", 
-					  loss={"num_clusters": "sparse_categorical_crossentropy", 
+					  loss={#"num_clusters": "sparse_categorical_crossentropy", 
 							"bounds": self.bounds_loss, 
-							"ranks": self.rank_loss},
-					  metrics={"num_clusters": ["mae",'accuracy'], 
+							#"ranks": self.rank_loss
+							},
+					  metrics={#"num_clusters": ["mae",'accuracy'], 
 							   "bounds": "MAE", 
-							   "ranks": ["mae",'accuracy']}, 
-					  loss_weights={'num_clusters': 0.5, 'bounds': 1.5, 'ranks': 0.5})
+							   #"ranks": ["mae",'accuracy']
+							   }, 
+					  #loss_weights={'num_clusters': 0.5, 'bounds': 1.5, 'ranks': 0.5}
+					  )
 					  
 		return model
 
@@ -153,6 +157,19 @@ class ANN_model():
 		diff_2 = tf.reduce_mean(tf.where(condition_2, exp_loss_2, mae_loss_2))
 		
 		return diff_1 + diff_2
+		
+	def bounds_metric(self, y_true, y_pred):
+		"""
+		number of clusters output metric function of the model.
+		"""
+		mask = tf.greater(y_true, 0)
+		
+		# selecting only real clusters
+		y_true_filtered = tf.boolean_mask(y_true, mask)
+		y_pred_filtered = tf.boolean_mask(y_pred, mask)
+		
+		return tf.abs(y_true - y_pred) 
+		
 		
 	def rank_loss(self, y_true, y_pred):
 		"""
