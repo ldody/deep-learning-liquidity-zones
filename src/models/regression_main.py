@@ -142,9 +142,9 @@ class regression(Base):
 																 verbose=1)
 																 
 		if all(x in os.listdir(self.path) for x in ['training_combined_log.csv','last_checkpoint.keras']):
-			last_epoch = pd.read_csv(os.path.join(os.listdir(self.path), 'training_log.csv'))['epoch'].iloc[-1] + 1
+			last_epoch = pd.read_csv(os.path.join(self.path, 'training_log.csv'))['epoch'].iloc[-1] + 1
 			
-			model = tf.keras.models.load_model(os.path.join(os.listdir(self.path), 'last_checkpoint.keras'))
+			model = tf.keras.models.load_model(os.path.join(self.path, 'last_checkpoint.keras'))
 		
 		else:
 			model = ANNmodel().model_build(input_shape = x_train.shape[1:], timesteps = self.prepro.n_pred)
@@ -227,20 +227,20 @@ class regression(Base):
 		test_dataset = test_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		dataset = dataset.batch(64).prefetch(tf.data.AUTOTUNE)
 		
-		csv_logger_train = tf.keras.callbacks.CSVLogger(os.path.join(os.listdir(self.path_model), 'training_combined_log.csv'), append=True)
-		csv_logger_eval = tf.keras.callbacks.CSVLogger(os.path.join(os.listdir(self.path_model), 'eval_combined_log.csv'), append=True)
-		csv_logger_test = tf.keras.callbacks.CSVLogger(os.path.join(os.listdir(self.path_model), 'test_combined_log.csv'), append=True)
+		csv_logger_train = tf.keras.callbacks.CSVLogger(os.path.join(self.path_model, 'training_combined_log.csv'), append=True)
+		csv_logger_eval = tf.keras.callbacks.CSVLogger(os.path.join(self.path_model, 'eval_combined_log.csv'), append=True)
+		csv_logger_test = tf.keras.callbacks.CSVLogger(os.path.join(self.path_model, 'test_combined_log.csv'), append=True)
 		
-		checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(os.path.join(os.listdir(self.path_model), 'last_checkpoint.keras'), 
+		checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(os.path.join(self.path_model, 'last_checkpoint.keras'), 
 																 save_weights_only=False,
 																 save_best_only=False,
 																 save_freq="epoch",
 																 verbose=1)
 																 
 		if all(x in os.listdir(self.path_model) for x in ['training_combined_log.csv','last_checkpoint.keras']):
-			last_epoch = pd.read_csv(os.path.join(os.listdir(self.path_model), 'training_log.csv'))['epoch'].iloc[-1] + 1
+			last_epoch = pd.read_csv(os.path.join(self.path_model, 'training_log.csv'))['epoch'].iloc[-1] + 1
 			
-			model = tf.keras.models.load_model(os.path.join(os.listdir(self.path_model), 'last_checkpoint.keras'))
+			model = tf.keras.models.load_model(os.path.join(self.path_model, 'last_checkpoint.keras'))
 		
 		else:
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
