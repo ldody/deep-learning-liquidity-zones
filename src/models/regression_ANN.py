@@ -130,7 +130,7 @@ class ANN_model():
 					  
 		return model
 
-	
+	@tf.keras.saving.register_keras_serializable()
 	def bounds_loss(self, y_true, y_pred):
 		"""
 		number of clusters output loss function of the model.

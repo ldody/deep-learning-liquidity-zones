@@ -236,14 +236,16 @@ class regression(Base):
 																 save_best_only=False,
 																 save_freq="epoch",
 																 verbose=1)
-																 
+		
+		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
+		
 		if all(x in os.listdir(self.path_model) for x in ['training_combined_log.csv','last_checkpoint.keras']):
 			last_epoch = pd.read_csv(os.path.join(self.path_model, 'training_combined_log.csv'))['epoch'].iloc[-1] + 1
 			
-			model = tf.keras.models.load_model(os.path.join(self.path_model, 'last_checkpoint.keras'))
+			latest_checkpoint = tf.train.latest_checkpoint(os.path.join(self.path_model, 'last_checkpoint.keras'))
+			model.load_weights(latest_checkpoint)
 		
 		else:
-			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
 			last_epoch = 0
 		
 		model.fit(dataset, 
