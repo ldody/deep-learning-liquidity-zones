@@ -242,8 +242,8 @@ class regression(Base):
 		if all(x in os.listdir(self.path_model) for x in ['training_combined_log.csv','last_checkpoint.keras']):
 			last_epoch = pd.read_csv(os.path.join(self.path_model, 'training_combined_log.csv'))['epoch'].iloc[-1] + 1
 			
-			latest_checkpoint = tf.train.latest_checkpoint(os.path.join(self.path_model, 'last_checkpoint.keras'))
-			model.load_weights(latest_checkpoint)
+			#latest_checkpoint = tf.train.latest_checkpoint(os.path.join(self.path_model, 'last_checkpoint.keras'))
+			model.load_weights(os.path.join(self.path_model, 'last_checkpoint.keras'))
 		
 		else:
 			last_epoch = 0
