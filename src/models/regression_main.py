@@ -238,7 +238,7 @@ class regression(Base):
 																 verbose=1)
 																 
 		if all(x in os.listdir(self.path_model) for x in ['training_combined_log.csv','last_checkpoint.keras']):
-			last_epoch = pd.read_csv(os.path.join(self.path_model, 'training_log.csv'))['epoch'].iloc[-1] + 1
+			last_epoch = pd.read_csv(os.path.join(self.path_model, 'training_combined_log.csv'))['epoch'].iloc[-1] + 1
 			
 			model = tf.keras.models.load_model(os.path.join(self.path_model, 'last_checkpoint.keras'))
 		
