@@ -83,7 +83,7 @@ class ANN_model():
 		# === 3. LSTM Block ===
 		def lstm_block(inputs):
 			"""LSTM to capture temporal dependencies"""
-			x = Bidirectional(LSTM(64, return_sequences=True))(inputs)
+			x = Bidirectional(LSTM(64, return_sequences=False))(inputs)
 			#x = Bidirectional(LSTM(64))(x)
 			return Dense(128, activation='relu')(x)
 
