@@ -76,7 +76,7 @@ class ANN_model():
 		def cnn_block(inputs):
 			"""CNN for pattern recognition in candlestick data"""
 			x = Conv2D(32, (5, 5), activation='relu', padding='same')(inputs)
-			x = Conv2D(64, (5, 5), activation='relu', padding='same')(x)
+			#x = Conv2D(64, (5, 5), activation='relu', padding='same')(x)
 			x = Flatten()(x)
 			return Dense(128, activation='relu')(x)
 
@@ -84,7 +84,7 @@ class ANN_model():
 		def lstm_block(inputs):
 			"""LSTM to capture temporal dependencies"""
 			x = Bidirectional(LSTM(64, return_sequences=True))(inputs)
-			x = Bidirectional(LSTM(64))(x)
+			#x = Bidirectional(LSTM(64))(x)
 			return Dense(128, activation='relu')(x)
 
 		# === 4. Model Input ===
@@ -103,7 +103,8 @@ class ANN_model():
 
 		# === 7. Outputs ===
 		#num_clusters_output = Dense(timesteps + 1, activation="softmax", name="num_clusters")(transformed_features[:, 0, :])  # Classification
-		bounds_output = Dense(2 * timesteps, activation="sigmoid")(transformed_features[:, 0, :])  # Regression
+		bounds_output = Dense(128, activation='relu')(transformed_features[:, 0, :])
+		bounds_output = Dense(2 * timesteps, activation="sigmoid")(bounds_output)  # Regression
 		bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
 		#ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
 		
