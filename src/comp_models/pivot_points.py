@@ -115,12 +115,13 @@ class PivotPoints():
 		
 		def launch():
 			test = self.df_ohlcv.copy()
-			test['Accuracy'] = 0
+			test['Accuracy'] = 0.0
 
 			for i, row in test.iterrows():
 				tmp = self.df_data.loc[self.df_data['index'] == row['Local Time']]
 				a = 0
 				d = 0
+				ls_clust = []
 				for p in ['Pivot','R1','S1','R2','S2','R3','S3']:
 
 					for j, rowdata in tmp.iterrows():
@@ -128,7 +129,9 @@ class PivotPoints():
 						if (row[p] > rowdata['price_min']) & (row[p] < rowdata['price_max']):
 							a += 1
 							d += min(abs(row[p] - rowdata['price_min']), abs(row[p] - rowdata['price_max']))
-
+							ls_clust.append(j)
+				
+				a = len(set(ls_clust))
 				r = min(7, len(tmp))
 
 				test.loc[test['Local Time'] == row['Local Time'], 'Accuracy'] = a/r if r != 0 else np.nan
