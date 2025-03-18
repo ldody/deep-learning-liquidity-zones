@@ -131,7 +131,7 @@ class PivotPoints():
 
 				r = min(7, len(tmp))
 
-				test.loc[test['Local Time'] == row['Local Time'], 'Accuracy'] = a/r
+				test.loc[test['Local Time'] == row['Local Time'], 'Accuracy'] = a/r if r != 0 else np.nan
 				test.loc[test['Local Time'] == row['Local Time'], 'MAE'] = d/a if a != 0 else np.nan
 				
 			return test
