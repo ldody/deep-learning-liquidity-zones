@@ -4,7 +4,7 @@ import warnings
 import pandas as pd
 import numpy as np
 import argparse
-import json
+import pickle
 from joblib import Parallel, delayed
 import multiprocessing
 from sklearn.model_selection import train_test_split
@@ -202,8 +202,8 @@ class regression(Base):
 					arrays_dict[key] = updated_list
 
 		try: 
-			with open(os.path.join(self.path_model, 'prepro.json'), 'r') as file:
-				arrays_dict = json.load(file)
+			with open(os.path.join(self.path_model, 'prepro.json'), 'rb') as file:
+				arrays_dict = pickle.load(file)
 	
 		except:
 			Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock, arrays_dict) for i, row in self.df_assets.iterrows())
@@ -216,9 +216,8 @@ class regression(Base):
 				except:
 					pass
 					
-			with open(os.path.join(self.path_model, 'prepro.json'), 'w') as f:
-				json.dump(arrays_dict, f, ensure_ascii=False, indent=4)
-			
+			with open(os.path.join(self.path_model, 'prepro.json'), 'wb') as file:
+				pickle.dump(arrays_dict, file)
 		
 		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {#"num_clusters": arrays_dict['n_train'], 
 																			   "bounds": arrays_dict['y_train'][:,:,:2], 
