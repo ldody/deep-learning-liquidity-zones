@@ -216,10 +216,8 @@ class regression(Base):
 				except:
 					pass
 					
-			json = json.dumps(arrays_dict)
-			f = open(os.path.join(self.path_model, 'prepro.json'), 'w')
-			f.write(json)
-			f.close()
+			with open(os.path.join(self.path_model, 'prepro.json'), 'w') as f:
+				json.dump(arrays_dict, f, ensure_ascii=False, indent=4)
 			
 		
 		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {#"num_clusters": arrays_dict['n_train'], 
