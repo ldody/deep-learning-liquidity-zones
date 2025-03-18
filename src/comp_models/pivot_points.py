@@ -141,6 +141,7 @@ class PivotPoints():
 			t = launch()
 			
 			t['windows'] = w
+			t['RIC'] = row['RIC']
 			
 			res = pd.concat([res, t])
 			
@@ -152,8 +153,9 @@ class PivotPoints():
 		"""
 		self.get_files()
 		
-		results = Parallel(n_jobs=8)(delayed(self.func_pivots)(row) for _, row in self.df_assets.iterrows())
+		results = Parallel(n_jobs=-1)(delayed(self.func_pivots)(row) for _, row in self.df_assets.iterrows())
 		
+		pd.concat(results).to_csv(os.path.join(self.results_path, 'PivotPoints.csv'))
 		print(pd.concat(results))
 
 		

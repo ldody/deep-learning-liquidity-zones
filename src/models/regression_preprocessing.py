@@ -65,8 +65,9 @@ class RegressionPreprocess(Base):
 					'index': [group['index'].iloc[0]] * missing_lines
 				})
 				additional_lines[['price_min', 'price_max', 'rank_size']] = 0
-				return pd.concat([group, additional_lines], ignore_index=True)
-			return group
+				return pd.concat([group, additional_lines], ignore_index=True).sort_values(['price_min'], ascending=True)
+				
+			return group.sort_values(['price_min'], ascending=True)
 		
 		df_data = df_data.groupby('index', group_keys=False).apply(fill_lines)
 		df_ohlcv['Volume'] = df_ohlcv['Volume'].fillna(0)

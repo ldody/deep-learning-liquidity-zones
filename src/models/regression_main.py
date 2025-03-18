@@ -4,6 +4,7 @@ import warnings
 import pandas as pd
 import numpy as np
 import argparse
+import json
 from joblib import Parallel, delayed
 import multiprocessing
 from sklearn.model_selection import train_test_split
@@ -200,15 +201,25 @@ class regression(Base):
 					updated_list.append(locals()[key])
 					arrays_dict[key] = updated_list
 
-		Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock, arrays_dict) for i, row in self.df_assets.iterrows())
-		
-		arrays_dict = dict(arrays_dict)
+		try: 
+			with open(os.path.join(self.path_model, 'prepro.json'), 'r') as file:
+				arrays_dict = json.load(file)
+	
+		except:
+			Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock, arrays_dict) for i, row in self.df_assets.iterrows())
+			
+			arrays_dict = dict(arrays_dict)
 
-		for key, arrays in arrays_dict.items():
-			try:
-				arrays_dict[key] = np.concatenate(arrays, axis=0)
-			except:
-				pass
+			for key, arrays in arrays_dict.items():
+				try:
+					arrays_dict[key] = np.concatenate(arrays, axis=0)
+				except:
+					pass
+					
+			json = json.dumps(arrays_dict)
+			f = open(os.path.join(self.path_model, 'prepro.json'), 'w')
+			f.write(json)
+			f.close()
 			
 		
 		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {#"num_clusters": arrays_dict['n_train'], 

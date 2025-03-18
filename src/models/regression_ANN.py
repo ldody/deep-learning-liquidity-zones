@@ -141,8 +141,14 @@ class ANN_model():
 		y_true_filtered = tf.boolean_mask(y_true, mask)
 		y_pred_filtered = tf.boolean_mask(y_pred, mask)
 		
-		condition_1 = tf.less(y_pred_filtered[0], y_true_filtered[0])  # min pred < min true
-		condition_2 = tf.greater(y_pred_filtered[1], y_true_filtered[1])  # max pred > max true
+		condition_1 = tf.greater(y_pred_filtered[0], y_true_filtered[0])  # min pred > min true
+		condition_2 = tf.less(y_pred_filtered[1], y_true_filtered[1])  # max pred < max true
+		
+		condition_3 = tf.greater(y_pred_filtered[1], y_true_filtered[0]) # max pred > min true
+		condition_4 = tf.less(y_pred_filtered[0], y_true_filtered[1]) # min pred < max true
+		
+		combined_condition_1 = tf.logical_and(condition_1, condition_4)
+		combined_condition_2 = tf.logical_and(condition_2, condition_3)
 	
 		# cond 1
 		exp_loss_1 = tf.exp(tf.abs(y_true_filtered[0] - y_pred_filtered[0]) + 1)  # exp loss
@@ -153,8 +159,8 @@ class ANN_model():
 		mae_loss_2 = tf.abs(y_true_filtered[1] - y_pred_filtered[1])         # MAE
 		
 		# applying loss according to condition
-		diff_1 = tf.reduce_mean(tf.where(condition_1, exp_loss_1, mae_loss_1))
-		diff_2 = tf.reduce_mean(tf.where(condition_2, exp_loss_2, mae_loss_2))
+		diff_1 = tf.reduce_mean(tf.where(combined_condition_1, mae_loss_1, exp_loss_1))
+		diff_2 = tf.reduce_mean(tf.where(combined_condition_2, mae_loss_2, exp_loss_2))
 		
 		return diff_1 + diff_2
 		
