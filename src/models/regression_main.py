@@ -296,7 +296,8 @@ class regression(Base):
 		
 		# preparing bayesian optimization
 		SAVE_FILE = 'optuna_study'
-		STUDY_NAME = f'sqlite:///{os.path.join(self.path_model, 'ann_optimization')}'
+		STUDY_NAME = os.path.join(self.path_model, 'ann_optimization')
+		STUDY_NAME = f'sqlite:///{STUDY_NAME}'
 		N_TRIALS = 240
 		
 		while True:
