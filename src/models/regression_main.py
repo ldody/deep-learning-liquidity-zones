@@ -295,9 +295,9 @@ class regression(Base):
 		dataset = dataset.take(val_size)
 		
 		# preparing bayesian optimization
-		SAVE_FILE = 'optuna_study'
+		STUDY_NAME = 'optuna_study'
 		DB_PATH = os.path.join(self.path_model, 'ann_optimization')
-		DB_PATH = f'sqlite:///{STUDY_NAME}'
+		DB_PATH = f'sqlite:///{DB_PATH}'
 		N_TRIALS = 240
 		
 		while True:
