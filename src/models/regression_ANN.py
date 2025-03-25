@@ -53,7 +53,7 @@ class ANN_model():
 		self.job_id = job_id
 		self.resampling_unit = resampling_unit
 		
-	def model_build(self, input_shape, latent_dim: int = 128, timesteps: int = 10):
+	def model_build(self, input_shape, timesteps: int = 10, num_units_concat=256, num_units_output=256, **kwargs):
 		"""
 		Building and compiling CNN 2D model.
 		
@@ -62,9 +62,12 @@ class ANN_model():
 
 		Returns:
 			model (tf.keras.Model): Compiled CNN 2D model.
-		"""		
+		"""
+		
+		dict_params = kwargs
+		
 		# === 1. Transformer Block ===
-		def transformer_block(inputs, num_heads=4, dim_ff=128, dropout_rate=0.1):
+		def transformer_block(inputs, num_heads=4, dim_ff=128, dropout_rate=0.1, **kwargs):
 			"""Transformer Encoder Block"""
 			attn_output = MultiHeadAttention(num_heads=num_heads, key_dim=inputs.shape[-1])(inputs, inputs)
 			attn_output = Dropout(dropout_rate)(attn_output)
@@ -73,38 +76,38 @@ class ANN_model():
 			return out1
 
 		# === 2. CNN Block ===
-		def cnn_block(inputs):
+		def cnn_block(inputs, num_units_CNN=32, dim_kernel_CNN=(5,5), num_units_output_bloc=128, **kwargs):
 			"""CNN for pattern recognition in candlestick data"""
-			x = Conv2D(32, (5, 5), activation='relu', padding='same')(inputs)
+			x = Conv2D(num_units_CNN, dim_kernel_CNN, activation='relu', padding='same')(inputs)
 			#x = Conv2D(64, (5, 5), activation='relu', padding='same')(x)
 			x = Flatten()(x)
-			return Dense(128, activation='relu')(x)
+			return Dense(num_units_output_bloc, activation='relu')(x)
 
 		# === 3. LSTM Block ===
-		def lstm_block(inputs):
+		def lstm_block(inputs, num_units_LSTM=64,  num_units_output_bloc=128, **kwargs):
 			"""LSTM to capture temporal dependencies"""
-			x = Bidirectional(LSTM(64, return_sequences=False))(inputs)
+			x = Bidirectional(LSTM(num_units_LSTM, return_sequences=False))(inputs)
 			#x = Bidirectional(LSTM(64))(x)
-			return Dense(128, activation='relu')(x)
+			return Dense(num_units_output_bloc, activation='relu')(x)
 
 		# === 4. Model Input ===
 		input_lstm = Input(shape=input_shape, name='OHLCV')
 		input_cnn = Reshape((input_shape[0], input_shape[1], 1))(input_lstm)  # Format (100,5,1)
 
 		# === 5. Feature Extraction ===
-		cnn_features = cnn_block(input_cnn)
-		lstm_features = lstm_block(input_lstm)
+		cnn_features = cnn_block(input_cnn, **dict_params)
+		lstm_features = lstm_block(input_lstm, **dict_params)
 
 		# === 6. Projection & Transformer ===
 		merged_features = tf.keras.layers.Concatenate()([cnn_features, lstm_features])
-		merged_features = Dense(256, activation="relu")(merged_features)
+		merged_features = Dense(num_units_concat, activation="relu")(merged_features)
 		merged_features = Reshape((1, merged_features.shape[-1]))(merged_features)  # Add time dimension for Transformer
-		transformed_features = transformer_block(merged_features)
+		transformed_features = transformer_block(merged_features, **dict_params)
 
 		# === 7. Outputs ===
 		#num_clusters_output = Dense(timesteps + 1, activation="softmax", name="num_clusters")(transformed_features[:, 0, :])  # Classification
-		bounds_output = Dense(256, activation='relu')(transformed_features[:, 0, :])
-		bounds_output = Dense(128, activation="sigmoid")(bounds_output)
+		bounds_output = Dense(num_units_output, activation='relu')(transformed_features[:, 0, :])
+		bounds_output = Dense(num_units_output/2, activation="sigmoid")(bounds_output)
 		bounds_output = Dense(2 * timesteps, activation="sigmoid")(bounds_output)  # Regression
 		bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
 		#ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification

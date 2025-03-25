@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 import argparse
 import pickle
+import optuna
+import time
 from joblib import Parallel, delayed
 import multiprocessing
 from sklearn.model_selection import train_test_split
@@ -267,6 +269,88 @@ class regression(Base):
 		
 		model.predict(eval_dataset, callbacks=[csv_logger_eval])
 		model.predict(test_dataset, callbacks=[csv_logger_test])
+		
+	def optimization(self):
+		"""
+		Running hyperparameters optimization process.
+		"""
+		self.get_files()
+		
+		# preparing datasets
+		with open(os.path.join(self.path_model, 'prepro.json'), 'rb') as file:
+			arrays_dict = pickle.load(file)
+		
+		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {#"num_clusters": arrays_dict['n_train'], 
+																			   "bounds": arrays_dict['y_train'][:,:,:2], 
+																			   #"ranks": arrays_dict['y_train'][:,:,-1]
+																			   })).shuffle(42)
+		
+		val_size = int(dataset.cardinality().numpy() * 0.05)
+
+		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {#"num_clusters": arrays_dict['n_test'], 
+																				   "bounds": arrays_dict['y_test'][:,:,:2], 
+																				   #"ranks": arrays_dict['y_test'][:,:,-1]
+																				   })).shuffle(42)
+		
+		dataset = dataset.take(val_size)
+		
+		# preparing bayesian optimization
+		SAVE_FILE = 'optuna_study'
+		STUDY_NAME = f'sqlite:///{os.path.join(self.path_model, 'ann_optimization')}'
+		N_TRIALS = 240
+		
+		while True:
+			try:
+				optuna.load_study(storage=DB_PATH, study_name=STUDY_NAME)
+				
+			except:
+				if self.job_id == 0:
+					optuna.create_study(storage=DB_PATH, study_name=STUDY_NAME, direction='minimize')
+				
+				else:
+					time.sleep(60)
+		
+		def objective(trial):
+			num_units_CNN = trial.suggest_categorical('num_units_CNN', [2**x for x in range(4,11)])
+			dim_kernel_CNN = trial.suggest_categorical('dim_kernel_CNN', [(1+2*x, 1+2*x) for x in range(1,7)])
+			num_units_LSTM = trial.suggest_categorical('num_units_LSTM', [2**x for x in range(4,11)])
+			num_units_concat = trial.suggest_categorical('num_units_concat', [2**x for x in range(4,11)])
+			num_units_output = trial.suggest_categorical('num_units_output', [2**x for x in range(4,11)])
+			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [2**x for x in range(4,11)])
+			num_heads = trial.suggest_categorical('num_heads', [x for x in range(2,7)])
+			dim_ff = trial.suggest_categorical('dim_ff', [2**x for x in range(4,11)])
+			batch_size = trial.suggest_categorical('batch_size', [2**x for x in range(4,9)])
+			num_epochs = trial.suggest_categorical('num_epochs', [100, 500, 1000, 1500, 2000])
+			
+			dict_params = {'num_units_CNN':num_units_CNN, 
+						   'dim_kernel_CNN':dim_kernel_CNN,
+						   'num_units_LSTM':num_units_LSTM,
+						   'num_units_concat':num_units_concat,
+						   'num_units_output':num_units_output,
+						   'num_units_output_bloc':num_units_output_bloc,
+						   'num_heads':num_heads,
+						   'dim_ff':dim_ff,
+						   }
+			
+			dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+			test_dataset = test_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+			
+			early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+			
+			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
+			
+			history = model.fit(dataset, 
+								  epochs=num_epochs,  
+								  verbose=0,
+								  validation_data=test_dataset,
+								  callbacks=[early_stop])
+					  
+			return min(history.history['val_loss'])
+			
+		TRIALS_PER_JOB = N_TRIALS // int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
+
+		study.optimize(objective, n_trials=TRIALS_PER_JOB)
+
 				  
 #convert str to bool for argparse
 def str2bool(v):
@@ -284,6 +368,7 @@ if __name__ == "__main__":
 	parser.add_argument('--job_id', type=int, default=0)
 	parser.add_argument('--slurm_array', '-sa', type=str2bool, default=False)
 	parser.add_argument('--combined', '-cmb', type=str2bool, default=False)
+	parser.add_argument('--bayesian_opti', '-ba', type=str2bool, default=False)
 	args = parser.parse_args()
 	
 	reg = regression(args.job_id)
@@ -293,3 +378,6 @@ if __name__ == "__main__":
 		
 	elif args.combined:
 		reg.combined_data_process()
+	
+	elif args.bayesian_opti:
+		reg.optimization()

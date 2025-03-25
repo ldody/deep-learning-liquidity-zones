@@ -9,3 +9,4 @@ fastparquet
 tqdm
 hdbscan
 ta
+optuna
