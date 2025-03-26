@@ -300,15 +300,15 @@ class regression(Base):
 		print('Starting BA')
 		
 		def objective(trial):
-			num_units_CNN = trial.suggest_categorical('num_units_CNN', [2**x for x in range(4,11)])
-			dim_kernel_CNN = trial.suggest_categorical('dim_kernel_CNN', [(1+2*x, 1+2*x) for x in range(1,7)])
-			num_units_LSTM = trial.suggest_categorical('num_units_LSTM', [2**x for x in range(4,11)])
-			num_units_concat = trial.suggest_categorical('num_units_concat', [2**x for x in range(4,11)])
-			num_units_output = trial.suggest_categorical('num_units_output', [2**x for x in range(4,11)])
-			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [2**x for x in range(4,11)])
-			num_heads = trial.suggest_categorical('num_heads', [x for x in range(2,7)])
-			dim_ff = trial.suggest_categorical('dim_ff', [2**x for x in range(4,11)])
-			batch_size = trial.suggest_categorical('batch_size', [2**x for x in range(4,9)])
+			num_units_CNN = trial.suggest_categorical('num_units_CNN', [int(2**x) for x in range(4,11)])
+			dim_kernel_CNN = trial.suggest_categorical('dim_kernel_CNN', [(int(1+2*x), int(1+2*x)) for x in range(1,7)])
+			num_units_LSTM = trial.suggest_categorical('num_units_LSTM', [int(2**x) for x in range(4,11)])
+			num_units_concat = trial.suggest_categorical('num_units_concat', [int(2**x) for x in range(4,11)])
+			num_units_output = trial.suggest_categorical('num_units_output', [int(2**x) for x in range(4,11)])
+			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [int(2**x) for x in range(4,11)])
+			num_heads = trial.suggest_categorical('num_heads', [int(x) for x in range(2,7)])
+			dim_ff = trial.suggest_categorical('dim_ff', [int(2**x) for x in range(4,11)])
+			batch_size = trial.suggest_categorical('batch_size', [int(2**x) for x in range(4,9)])
 			num_epochs = trial.suggest_categorical('num_epochs', [100, 500, 1000, 1500, 2000])
 			
 			dict_params = {'num_units_CNN':num_units_CNN, 
