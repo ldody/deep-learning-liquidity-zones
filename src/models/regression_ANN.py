@@ -107,7 +107,7 @@ class ANN_model():
 		# === 7. Outputs ===
 		#num_clusters_output = Dense(timesteps + 1, activation="softmax", name="num_clusters")(transformed_features[:, 0, :])  # Classification
 		bounds_output = Dense(num_units_output, activation='relu')(transformed_features[:, 0, :])
-		bounds_output = Dense(num_units_output/2, activation="sigmoid")(bounds_output)
+		bounds_output = Dense(int(num_units_output/2), activation="sigmoid")(bounds_output)
 		bounds_output = Dense(2 * timesteps, activation="sigmoid")(bounds_output)  # Regression
 		bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
 		#ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
