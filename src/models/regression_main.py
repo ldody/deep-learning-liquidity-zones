@@ -279,7 +279,7 @@ class regression(Base):
 		# preparing bayesian optimization
 		STUDY_NAME = 'optuna_study'
 		DB_PATH = os.path.join(self.path_model, 'ann_optimization')
-		DB_PATH = f'sqlite:///{DB_PATH}'
+		DB_PATH = f'mysql:///{DB_PATH}'
 		N_TRIALS = 240
 		
 		while True:
