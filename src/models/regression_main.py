@@ -304,6 +304,7 @@ class regression(Base):
 			try:
 				print('Loading study')
 				optuna.load_study(storage=DB_PATH, study_name=STUDY_NAME)
+				break
 				
 			except:
 				if self.job_id == 0:
