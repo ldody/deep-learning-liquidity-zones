@@ -303,13 +303,13 @@ class regression(Base):
 		while True:
 			try:
 				print('Loading study')
-				optuna.load_study(storage=DB_PATH, study_name=STUDY_NAME)
+				study = optuna.load_study(storage=DB_PATH, study_name=STUDY_NAME)
 				break
 				
 			except:
 				if self.job_id == 0:
 					print('Creatind DB')
-					optuna.create_study(storage=DB_PATH, study_name=STUDY_NAME, direction='minimize')
+					study = optuna.create_study(storage=DB_PATH, study_name=STUDY_NAME, direction='minimize')
 				
 				else:
 					print('Waiting for DB creation')
