@@ -276,24 +276,6 @@ class regression(Base):
 		"""
 		self.get_files()
 		
-		# preparing datasets
-		with open(os.path.join(self.path_model, 'prepro.json'), 'rb') as file:
-			arrays_dict = pickle.load(file)
-		
-		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {#"num_clusters": arrays_dict['n_train'], 
-																			   "bounds": arrays_dict['y_train'][:,:,:2], 
-																			   #"ranks": arrays_dict['y_train'][:,:,-1]
-																			   })).shuffle(42)
-		
-		val_size = int(dataset.cardinality().numpy() * 0.05)
-
-		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {#"num_clusters": arrays_dict['n_test'], 
-																				   "bounds": arrays_dict['y_test'][:,:,:2], 
-																				   #"ranks": arrays_dict['y_test'][:,:,-1]
-																				   })).shuffle(42)
-		
-		dataset = dataset.take(val_size)
-		
 		# preparing bayesian optimization
 		STUDY_NAME = 'optuna_study'
 		DB_PATH = os.path.join(self.path_model, 'ann_optimization')
@@ -338,6 +320,18 @@ class regression(Base):
 						   'num_heads':num_heads,
 						   'dim_ff':dim_ff,
 						   }
+			
+			# preparing datasets
+			with open(os.path.join(self.path_model, 'prepro.json'), 'rb') as file:
+				arrays_dict = pickle.load(file)
+			
+			dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"bounds": arrays_dict['y_train'][:,:,:2]})).shuffle(42)
+			
+			val_size = int(dataset.cardinality().numpy() * 0.05)
+
+			test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"bounds": arrays_dict['y_test'][:,:,:2]})).shuffle(42)
+			
+			dataset = dataset.take(val_size)
 			
 			dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 			test_dataset = test_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
