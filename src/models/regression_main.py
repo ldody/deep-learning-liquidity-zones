@@ -1,5 +1,6 @@
 # import packages
 import os, sys
+import logging
 import warnings
 import pandas as pd
 import numpy as np
@@ -277,21 +278,26 @@ class regression(Base):
 		self.get_files()
 		
 		# preparing bayesian optimization
+		optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
 		STUDY_NAME = 'optuna_study'
-		DB_PATH = os.path.join(self.path_model, 'ann_optimization')
-		DB_PATH = f'mysql:///{DB_PATH}'
+		DB_PATH = os.path.join(self.path_model, 'ann_optimization.log')
+		storage = optuna.storages.JournalStorage(
+			optuna.storages.journal.JournalFileBackend(DB_PATH),
+		)
+		
+
 		N_TRIALS = 240
 		
 		while True:
 			try:
 				print('Loading study')
-				study = optuna.load_study(storage=DB_PATH, study_name=STUDY_NAME)
+				study = optuna.load_study(storage=storage, study_name=STUDY_NAME)
 				break
 				
 			except:
 				if self.job_id == 0:
 					print('Creatind DB')
-					study = optuna.create_study(storage=DB_PATH, study_name=STUDY_NAME, direction='minimize')
+					study = optuna.create_study(storage=storage, study_name=STUDY_NAME, direction='minimize')
 				
 				else:
 					print('Waiting for DB creation')

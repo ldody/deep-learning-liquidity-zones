@@ -10,4 +10,3 @@ tqdm
 hdbscan
 ta
 optuna
-mysqlclient
