@@ -302,14 +302,19 @@ class regression(Base):
 		
 		while True:
 			try:
+				print('Loading study')
 				optuna.load_study(storage=DB_PATH, study_name=STUDY_NAME)
 				
 			except:
 				if self.job_id == 0:
+					print('Creatind DB')
 					optuna.create_study(storage=DB_PATH, study_name=STUDY_NAME, direction='minimize')
 				
 				else:
+					print('Waiting for DB creation')
 					time.sleep(60)
+		
+		print('Starting BA')
 		
 		def objective(trial):
 			num_units_CNN = trial.suggest_categorical('num_units_CNN', [2**x for x in range(4,11)])
