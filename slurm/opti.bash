@@ -3,13 +3,13 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem-per-cpu=6000
+#SBATCH --mem-per-cpu=4000
 #SBATCH --mail-type=all
 #SBATCH --mail-user=leo.dody1@univ-lyon3.fr
 #SBATCH --output=ANN_model_%a.out #/dev/null
 #SBATCH --job-name=opti_model_%a
 #SBATCH --partition=c6420-ib100
-#SBATCH --array=0-19%20
+#SBATCH --array=0-239%60
 
 
 module purge

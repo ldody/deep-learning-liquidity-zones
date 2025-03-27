@@ -286,7 +286,7 @@ class regression(Base):
 		)
 		
 
-		N_TRIALS = 240
+		#N_TRIALS = 240
 		
 		while True:
 			try:
@@ -354,9 +354,9 @@ class regression(Base):
 					  
 			return min(history.history['val_loss'])
 			
-		TRIALS_PER_JOB = N_TRIALS // int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
+		#TRIALS_PER_JOB = N_TRIALS // int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
 
-		study.optimize(objective, n_trials=TRIALS_PER_JOB)
+		study.optimize(objective, n_trials=1)
 
 				  
 #convert str to bool for argparse
