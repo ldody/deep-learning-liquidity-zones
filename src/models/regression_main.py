@@ -12,6 +12,7 @@ from joblib import Parallel, delayed
 import multiprocessing
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
+from tf.keras.callbacks import EarlyStopping
 #tf.config.threading.set_intra_op_parallelism_threads(60)
 #tf.config.threading.set_inter_op_parallelism_threads(60)
 tf.random.set_seed(42)
@@ -344,7 +345,7 @@ class regression(Base):
 			dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 			test_dataset = test_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 			
-			#early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+			early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 			
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 			
@@ -352,7 +353,8 @@ class regression(Base):
 			history = model.fit(dataset, 
 								  epochs=num_epochs,  
 								  verbose=2,
-								  validation_data=test_dataset
+								  validation_data=test_dataset,
+								  callbacks=[early_stop]
 								  )
 					  
 			return min(history.history['val_loss'])
