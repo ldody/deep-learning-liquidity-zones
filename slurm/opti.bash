@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=5
+#SBATCH --cpus-per-task=1
 #SBATCH --ntasks-per-node=20
 #SBATCH --mem-per-cpu=4000
 #SBATCH --mail-type=all
