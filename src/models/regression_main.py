@@ -337,7 +337,9 @@ class regression(Base):
 
 			test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"bounds": arrays_dict['y_test'][:,:,:2]})).shuffle(42)
 			
+			print(f'len dataset before take {len(dataset)}')
 			dataset = dataset.take(val_size)
+			print(f'len dataset before after {len(dataset)}')
 			
 			dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 			test_dataset = test_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
@@ -346,9 +348,10 @@ class regression(Base):
 			
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 			
+			print('Start fitting model')
 			history = model.fit(dataset, 
 								  epochs=num_epochs,  
-								  verbose=0,
+								  verbose=2,
 								  validation_data=test_dataset
 								  )
 					  
