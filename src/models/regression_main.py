@@ -12,7 +12,7 @@ from joblib import Parallel, delayed
 import multiprocessing
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
-from tf.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping
 #tf.config.threading.set_intra_op_parallelism_threads(60)
 #tf.config.threading.set_inter_op_parallelism_threads(60)
 tf.random.set_seed(42)
