@@ -4,7 +4,6 @@
 #SBATCH --cpus-per-task=5
 #SBATCH --ntasks-per-node=20
 #SBATCH --mem-per-cpu=4000
-#SBATCH --exclusive
 #SBATCH --mail-type=all
 #SBATCH --mail-user=leo.dody1@univ-lyon3.fr
 #SBATCH --output=ANN_model_%a.out #/dev/null
