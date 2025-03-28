@@ -13,8 +13,8 @@ import multiprocessing
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
-#tf.config.threading.set_intra_op_parallelism_threads(60)
-#tf.config.threading.set_inter_op_parallelism_threads(60)
+tf.config.threading.set_intra_op_parallelism_threads(60)
+tf.config.threading.set_inter_op_parallelism_threads(60)
 tf.random.set_seed(42)
 
 warnings.simplefilter(action='ignore', category=Warning)
@@ -309,12 +309,12 @@ class regression(Base):
 		def objective(trial):
 			num_units_CNN = trial.suggest_categorical('num_units_CNN', [int(2**x) for x in range(4,11)])
 			dim_kernel_CNN = trial.suggest_categorical('dim_kernel_CNN', [(int(1+2*x), int(1+2*x)) for x in range(1,7)])
-			num_units_LSTM = trial.suggest_categorical('num_units_LSTM', [int(2**x) for x in range(4,11)])
+			num_units_LSTM = trial.suggest_categorical('num_units_LSTM', [int(2**x) for x in range(4,10)])
 			num_units_concat = trial.suggest_categorical('num_units_concat', [int(2**x) for x in range(4,11)])
 			num_units_output = trial.suggest_categorical('num_units_output', [int(2**x) for x in range(4,11)])
 			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [int(2**x) for x in range(4,11)])
-			num_heads = trial.suggest_categorical('num_heads', [int(x) for x in range(2,7)])
-			dim_ff = trial.suggest_categorical('dim_ff', [int(2**x) for x in range(4,11)])
+			num_heads = trial.suggest_categorical('num_heads', [int(x) for x in range(2,5)])
+			dim_ff = trial.suggest_categorical('dim_ff', [int(2**x) for x in range(4,8)])
 			batch_size = trial.suggest_categorical('batch_size', [int(2**x) for x in range(4,9)])
 			num_epochs = trial.suggest_categorical('num_epochs', [100, 500, 1000, 1500, 2000])
 			
@@ -345,7 +345,7 @@ class regression(Base):
 			dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 			test_dataset = test_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 			
-			early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
+			early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True, start_from_epoch=200)
 			
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 			
@@ -362,6 +362,7 @@ class regression(Base):
 		#TRIALS_PER_JOB = N_TRIALS // int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
 
 		study.optimize(objective, n_trials=1)
+		print(study.best_trial)
 
 				  
 #convert str to bool for argparse
