@@ -345,7 +345,7 @@ class regression(Base):
 			dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 			test_dataset = test_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 			
-			early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True, start_from_epoch=200)
+			#early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True, start_from_epoch=200)
 			
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 			
@@ -354,7 +354,7 @@ class regression(Base):
 								  epochs=num_epochs,  
 								  verbose=2,
 								  validation_data=test_dataset,
-								  callbacks=[early_stop]
+								  #callbacks=[early_stop]
 								  )
 					  
 			return min(history.history['val_loss'])
