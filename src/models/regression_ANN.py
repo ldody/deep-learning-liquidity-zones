@@ -74,7 +74,7 @@ class ANN_model():
 			out1 = Add()([inputs, attn_output])  # Residual Connection
 			out1 = LayerNormalization()(out1)
 			
-			ff_output = Dense(dim_ff, activation="relu")(out1)
+			ff_output = Dense(inputs.shape[-1], activation="relu")(out1)
 			ff_output = Dropout(dropout_rate)(ff_output)
 			out2 = Add()([out1, ff_output])  
 			out2 = LayerNormalization()(out2)

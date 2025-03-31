@@ -314,7 +314,7 @@ class regression(Base):
 			num_units_output = trial.suggest_categorical('num_units_output', [int(2**x) for x in range(4,10)])
 			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [int(2**x) for x in range(4,10)])
 			num_heads = 4 #trial.suggest_categorical('num_heads', [int(x) for x in range(2,5)])
-			dim_ff = trial.suggest_categorical('dim_ff', [int(2**x) for x in range(4,8)])
+			#dim_ff = trial.suggest_categorical('dim_ff', [int(2**x) for x in range(4,8)])
 			batch_size = trial.suggest_categorical('batch_size', [int(2**x) for x in range(4,9)])
 			num_epochs = trial.suggest_categorical('num_epochs', [100, 500, 1000, 1500, 2000])
 			
