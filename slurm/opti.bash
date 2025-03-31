@@ -6,10 +6,10 @@
 #SBATCH --mem-per-cpu=4000
 #SBATCH --mail-type=all
 #SBATCH --mail-user=leo.dody1@univ-lyon3.fr
-#SBATCH --output=ANN_model_%a.out #ANN_model_%a.out #/dev/null
+#SBATCH --output=/dev/null #ANN_model_%a.out
 #SBATCH --job-name=opti_model_%a
 #SBATCH --partition=c6420-ib100
-#SBATCH --array=0-2%3
+#SBATCH --array=0-200%6
 
 
 module purge
