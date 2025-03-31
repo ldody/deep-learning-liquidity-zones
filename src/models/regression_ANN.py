@@ -73,21 +73,27 @@ class ANN_model():
 			attn_output = Dropout(dropout_rate)(attn_output)
 			out1 = Add()([inputs, attn_output])  # Residual Connection
 			out1 = LayerNormalization()(out1)
-			return out1
+			
+			ff_output = Dense(dim_ff, activation="relu")(out1)
+			ff_output = Dropout(dropout_rate)(ff_output)
+			out2 = Add()([out1, ff_output])  
+			out2 = LayerNormalization()(out2)
+			
+			return out2
 
 		# === 2. CNN Block ===
 		def cnn_block(inputs, num_units_CNN=32, dim_kernel_CNN=(5,5), num_units_output_bloc=128, **kwargs):
 			"""CNN for pattern recognition in candlestick data"""
 			x = Conv2D(num_units_CNN, dim_kernel_CNN, activation='relu', padding='same')(inputs)
-			#x = Conv2D(64, (5, 5), activation='relu', padding='same')(x)
+			x = Conv2D(int(num_units_CNN/2), (3, 3), activation='relu', padding='same')(x)
 			x = Flatten()(x)
 			return Dense(num_units_output_bloc, activation='relu')(x)
 
 		# === 3. LSTM Block ===
 		def lstm_block(inputs, num_units_LSTM=64,  num_units_output_bloc=128, **kwargs):
 			"""LSTM to capture temporal dependencies"""
-			x = Bidirectional(LSTM(num_units_LSTM, return_sequences=False))(inputs)
-			#x = Bidirectional(LSTM(64))(x)
+			x = Bidirectional(LSTM(num_units_LSTM, return_sequences=True))(inputs)
+			x = Bidirectional(LSTM(int(num_units_LSTM/2)))(x)
 			return Dense(num_units_output_bloc, activation='relu')(x)
 
 		# === 4. Model Input ===
@@ -106,10 +112,11 @@ class ANN_model():
 
 		# === 7. Outputs ===
 		#num_clusters_output = Dense(timesteps + 1, activation="softmax", name="num_clusters")(transformed_features[:, 0, :])  # Classification
-		bounds_output = Dense(num_units_output, activation='relu')(transformed_features[:, 0, :])
-		bounds_output = Dense(int(num_units_output/2), activation="sigmoid")(bounds_output)
-		bounds_output = Dense(2 * timesteps, activation="sigmoid")(bounds_output)  # Regression
-		bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
+		min_output = Dense(num_units_output, activation='sigmoid')(transformed_features[:, 0, :])
+		range_output = Dense(num_units_output, activation="softplus")(transformed_features[:, 0, :])
+		#bounds_output = Dense(2 * timesteps, activation="sigmoid")(bounds_output)  # Regression
+		#bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
+		bounds_output = tf.stack([min_output, min_output + range_output], axis=1, name="bounds")
 		#ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
 		
 		# === 8. Build & Compile Model ===
@@ -163,8 +170,8 @@ class ANN_model():
 		mae_loss_2 = tf.abs(y_true_filtered[1] - y_pred_filtered[1])         # MAE
 		
 		# applying loss according to condition
-		diff_1 = tf.reduce_mean(tf.where(combined_condition_1, mae_loss_1, exp_loss_1))
-		diff_2 = tf.reduce_mean(tf.where(combined_condition_2, mae_loss_2, exp_loss_2))
+		diff_1 = tf.reduce_mean(tf.where(condition_1, mae_loss_1, exp_loss_1))
+		diff_2 = tf.reduce_mean(tf.where(condition_2, mae_loss_2, exp_loss_2))
 		
 		return diff_1 + diff_2
 		

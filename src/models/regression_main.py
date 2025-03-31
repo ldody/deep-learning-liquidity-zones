@@ -307,13 +307,13 @@ class regression(Base):
 		print('Starting BA')
 		
 		def objective(trial):
-			num_units_CNN = trial.suggest_categorical('num_units_CNN', [int(2**x) for x in range(4,11)])
-			dim_kernel_CNN = trial.suggest_categorical('dim_kernel_CNN', [(int(1+2*x), int(1+2*x)) for x in range(1,7)])
-			num_units_LSTM = trial.suggest_categorical('num_units_LSTM', [int(2**x) for x in range(4,10)])
-			num_units_concat = trial.suggest_categorical('num_units_concat', [int(2**x) for x in range(4,11)])
-			num_units_output = trial.suggest_categorical('num_units_output', [int(2**x) for x in range(4,11)])
-			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [int(2**x) for x in range(4,11)])
-			num_heads = trial.suggest_categorical('num_heads', [int(x) for x in range(2,5)])
+			num_units_CNN = trial.suggest_categorical('num_units_CNN', [int(2**x) for x in range(4,9)])
+			dim_kernel_CNN = trial.suggest_categorical('dim_kernel_CNN', [(int(1+2*x), int(1+2*x)) for x in range(1,6)])
+			num_units_LSTM = trial.suggest_categorical('num_units_LSTM', [int(2**x) for x in range(4,9)])
+			num_units_concat = trial.suggest_categorical('num_units_concat', [int(2**x) for x in range(4,10)])
+			num_units_output = trial.suggest_categorical('num_units_output', [int(2**x) for x in range(4,10)])
+			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [int(2**x) for x in range(4,10)])
+			num_heads = 4 #trial.suggest_categorical('num_heads', [int(x) for x in range(2,5)])
 			dim_ff = trial.suggest_categorical('dim_ff', [int(2**x) for x in range(4,8)])
 			batch_size = trial.suggest_categorical('batch_size', [int(2**x) for x in range(4,9)])
 			num_epochs = trial.suggest_categorical('num_epochs', [100, 500, 1000, 1500, 2000])
@@ -336,14 +336,15 @@ class regression(Base):
 			
 			val_size = int(dataset.cardinality().numpy() * 0.05)
 
-			test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"bounds": arrays_dict['y_test'][:,:,:2]})).shuffle(42)
+			#test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"bounds": arrays_dict['y_test'][:,:,:2]})).shuffle(42)
 			
 			print(f'len dataset before take {len(dataset)}')
+			eval_dataset = dataset.skip(int(dataset.cardinality().numpy() * 0.9))
 			dataset = dataset.take(val_size)
 			print(f'len dataset before after {len(dataset)}')
 			
 			dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
-			test_dataset = test_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+			eval_dataset = eval_dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
 			
 			#early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True, start_from_epoch=200)
 			
@@ -353,7 +354,7 @@ class regression(Base):
 			history = model.fit(dataset, 
 								  epochs=num_epochs,  
 								  verbose=2,
-								  validation_data=test_dataset,
+								  validation_data=eval_dataset,
 								  #callbacks=[early_stop]
 								  )
 					  

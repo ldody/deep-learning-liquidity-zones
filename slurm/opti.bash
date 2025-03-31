@@ -15,7 +15,6 @@
 module purge
 module use /easybuild/AlmaLinux/8/skylake-avx512/mlxln5.5/foss2022b/modules/all
 module load Python/3.10.4-GCCcore-12.2.0
-module load SQLite/3.39.4-GCCcore-12.2.0
 source /home_nfs/polytech/leo.dody/PhD/Article_2/PhD_article_2/.venv/bin/activate
 
 export PYTHONUNBUFFERED=TRUE
