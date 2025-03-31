@@ -116,7 +116,7 @@ class ANN_model():
 		range_output = Dense(timesteps, activation="softplus")(transformed_features[:, 0, :])
 		#bounds_output = Dense(2 * timesteps, activation="sigmoid")(bounds_output)  # Regression
 		#bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
-		bounds_output = Lambda(lambda x: tf.stack([x[0], x[0] + x[1]], axis=0), name="bounds")([min_output, range_output])
+		bounds_output = Lambda(lambda x: tf.stack([x[0], x[0] + x[1]], axis=-1), name="bounds")([min_output, range_output])
 		#ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
 		
 		# === 8. Build & Compile Model ===
