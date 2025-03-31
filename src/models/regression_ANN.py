@@ -8,7 +8,7 @@ from fastparquet import write
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Conv2D, Flatten, Dense, LSTM, Bidirectional, LayerNormalization
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import MultiHeadAttention, Dropout, Add, Reshape
+from tensorflow.keras.layers import MultiHeadAttention, Dropout, Add, Reshape, Lambda
 from tqdm import tqdm
 #from base_log import Base, log_execution
 tf.random.set_seed(42)
@@ -116,7 +116,7 @@ class ANN_model():
 		range_output = Dense(num_units_output, activation="softplus")(transformed_features[:, 0, :])
 		#bounds_output = Dense(2 * timesteps, activation="sigmoid")(bounds_output)  # Regression
 		#bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
-		bounds_output = tf.stack([min_output, min_output + range_output], axis=1, name="bounds")
+		bounds_output = Lambda(lambda x: tf.stack([x[0], x[0] + x[1]], axis=1), name="bounds")([min_output, range_output])
 		#ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
 		
 		# === 8. Build & Compile Model ===
