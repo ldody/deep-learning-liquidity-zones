@@ -112,8 +112,8 @@ class ANN_model():
 
 		# === 7. Outputs ===
 		#num_clusters_output = Dense(timesteps + 1, activation="softmax", name="num_clusters")(transformed_features[:, 0, :])  # Classification
-		min_output = Dense(num_units_output, activation='sigmoid')(transformed_features[:, 0, :])
-		range_output = Dense(num_units_output, activation="softplus")(transformed_features[:, 0, :])
+		min_output = Dense(timesteps, activation='sigmoid')(transformed_features[:, 0, :])
+		range_output = Dense(timesteps, activation="softplus")(transformed_features[:, 0, :])
 		#bounds_output = Dense(2 * timesteps, activation="sigmoid")(bounds_output)  # Regression
 		#bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
 		bounds_output = Lambda(lambda x: tf.stack([x[0], x[0] + x[1]], axis=1), name="bounds")([min_output, range_output])
