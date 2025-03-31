@@ -311,10 +311,7 @@ class regression(Base):
 			dim_kernel_CNN = trial.suggest_categorical('dim_kernel_CNN', [(int(1+2*x), int(1+2*x)) for x in range(1,6)])
 			num_units_LSTM = trial.suggest_categorical('num_units_LSTM', [int(2**x) for x in range(4,9)])
 			num_units_concat = trial.suggest_categorical('num_units_concat', [int(2**x) for x in range(4,10)])
-			#num_units_output = trial.suggest_categorical('num_units_output', [int(2**x) for x in range(4,10)])
 			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [int(2**x) for x in range(4,10)])
-			num_heads = 4 #trial.suggest_categorical('num_heads', [int(x) for x in range(2,5)])
-			#dim_ff = trial.suggest_categorical('dim_ff', [int(2**x) for x in range(4,8)])
 			batch_size = trial.suggest_categorical('batch_size', [int(2**x) for x in range(4,9)])
 			num_epochs = trial.suggest_categorical('num_epochs', [100, 500, 1000, 1500, 2000])
 			
@@ -322,10 +319,7 @@ class regression(Base):
 						   'dim_kernel_CNN':dim_kernel_CNN,
 						   'num_units_LSTM':num_units_LSTM,
 						   'num_units_concat':num_units_concat,
-						   'num_units_output':num_units_output,
-						   'num_units_output_bloc':num_units_output_bloc,
-						   'num_heads':num_heads,
-						   'dim_ff':dim_ff,
+						   'num_units_output_bloc':num_units_output_bloc
 						   }
 			
 			# preparing datasets
