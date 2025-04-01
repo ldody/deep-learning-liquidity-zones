@@ -345,11 +345,12 @@ class regression(Base):
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 			
 			print('Start fitting model')
+			callback = LimitTrainingTime(79200)
 			history = model.fit(dataset, 
 								  epochs=num_epochs,  
 								  verbose=2,
 								  validation_data=eval_dataset,
-								  #callbacks=[early_stop]
+								  callbacks=[callback]
 								  )
 					  
 			return min(history.history['val_loss'])
@@ -358,6 +359,20 @@ class regression(Base):
 
 		study.optimize(objective, n_trials=1)
 		print(study.best_trial)
+
+class LimitTrainingTime(tf.keras.callbacks.Callback):
+  def __init__(self, max_time_s):
+	super().__init__()
+	self.max_time_s = max_time_s
+	self.start_time = None
+
+  def on_train_begin(self, logs):
+	self.start_time = time.time()
+
+  def on_train_batch_end(self, batch, logs):
+	now = time.time()
+	if now - self.start_time >  self.max_time_s:
+	  self.model.stop_training = True
 
 				  
 #convert str to bool for argparse
