@@ -361,18 +361,18 @@ class regression(Base):
 		print(study.best_trial)
 
 class LimitTrainingTime(tf.keras.callbacks.Callback):
-  def __init__(self, max_time_s):
-	super().__init__()
-	self.max_time_s = max_time_s
-	self.start_time = None
+	def __init__(self, max_time_s):
+		super().__init__()
+		self.max_time_s = max_time_s
+		self.start_time = None
 
-  def on_train_begin(self, logs):
-	self.start_time = time.time()
+	def on_train_begin(self, logs):
+		self.start_time = time.time()
 
-  def on_train_batch_end(self, batch, logs):
-	now = time.time()
-	if now - self.start_time >  self.max_time_s:
-	  self.model.stop_training = True
+	def on_train_batch_end(self, batch, logs):
+		now = time.time()
+		if now - self.start_time >  self.max_time_s:
+			self.model.stop_training = True
 
 				  
 #convert str to bool for argparse
