@@ -102,7 +102,7 @@ class ANN_model():
 
 		# === 4. Model Input ===
 		input_gru = Input(shape=input_shape, name='OHLCV')
-		print(len(input_gru))
+		print(input_gru)
 		input_cnn = Reshape((input_shape[0], input_shape[1], 1))(input_gru)  # Format (100,5,1)
 
 		# === 5. Feature Extraction ===
