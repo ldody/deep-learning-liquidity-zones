@@ -317,7 +317,7 @@ class regression(Base):
 			
 			dict_params = {'num_units_CNN':num_units_CNN, 
 						   'dim_kernel_CNN':dim_kernel_CNN,
-						   'num_units_GRU':num_units_LSTM,
+						   'num_units_GRU':num_units_GRU,
 						   'num_units_concat':num_units_concat,
 						   'num_units_output_bloc':num_units_output_bloc
 						   }
