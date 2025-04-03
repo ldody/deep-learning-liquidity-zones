@@ -108,6 +108,8 @@ class ANN_model():
 		# === 5. Feature Extraction ===
 		cnn_features = cnn_block(input_cnn, **dict_params)
 		gru_features = gru_block(input_gru, **dict_params)
+		print(cnn_features)
+		print(gru_features)
 
 		# === 6. Projection & Transformer ===
 		merged_features = tf.keras.layers.Concatenate()([cnn_features, gru_features])
