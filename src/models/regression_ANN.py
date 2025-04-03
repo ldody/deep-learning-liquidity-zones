@@ -93,12 +93,16 @@ class ANN_model():
 		def gru_block(inputs, num_units_GRU=64, num_units_output_bloc=128, dropout_rate=0.2, **kwargs):
 			"""GRU block with 2 layers, Dropout & BatchNorm"""
 			x = Bidirectional(GRU(num_units_GRU, return_sequences=True))(inputs)
+			print(x)
 			x = Dropout(dropout_rate)(x)  # Régularisation
 			
 			x = Bidirectional(GRU(num_units_GRU // 2))(x)  # Réduction progressive
+			print(x)
 			x = BatchNormalization()(x)  # Stabilisation
+			print(x)
 			
 			x = Dense(num_units_output_bloc, activation='relu')(x)
+			print(x)
 
 		# === 4. Model Input ===
 		input_gru = Input(shape=input_shape, name='OHLCV')
