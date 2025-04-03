@@ -6,7 +6,7 @@ import numpy as np
 import argparse
 from fastparquet import write
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Conv2D, Flatten, Dense, LSTM, Bidirectional, LayerNormalization
+from tensorflow.keras.layers import Input, Conv2D, Flatten, Dense, Bidirectional, LayerNormalization, GRU, BatchNormalization
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import MultiHeadAttention, Dropout, Add, Reshape, Lambda
 from tqdm import tqdm
@@ -89,23 +89,27 @@ class ANN_model():
 			x = Flatten()(x)
 			return Dense(num_units_output_bloc, activation='relu')(x)
 
-		# === 3. LSTM Block ===
-		def lstm_block(inputs, num_units_LSTM=64,  num_units_output_bloc=128, **kwargs):
-			"""LSTM to capture temporal dependencies"""
-			x = Bidirectional(LSTM(num_units_LSTM, return_sequences=True))(inputs)
-			x = Bidirectional(LSTM(int(num_units_LSTM/2)))(x)
-			return Dense(num_units_output_bloc, activation='relu')(x)
+		# === 3. GRU Block ===            
+		def gru_block(inputs, num_units_GRU=64, num_units_output_bloc=128, dropout_rate=0.2, **kwargs):
+			"""GRU block with 2 layers, Dropout & BatchNorm"""
+			x = Bidirectional(GRU(num_units_GRU, return_sequences=True))(inputs)
+			x = Dropout(dropout_rate)(x)  # Régularisation
+			
+			x = Bidirectional(GRU(num_units_GRU // 2))(x)  # Réduction progressive
+			x = BatchNormalization()(x)  # Stabilisation
+			
+			x = Dense(num_units_output_bloc, activation='relu')(x)
 
 		# === 4. Model Input ===
-		input_lstm = Input(shape=input_shape, name='OHLCV')
-		input_cnn = Reshape((input_shape[0], input_shape[1], 1))(input_lstm)  # Format (100,5,1)
+		input_gru = Input(shape=input_shape, name='OHLCV')
+		input_cnn = Reshape((input_shape[0], input_shape[1], 1))(input_gru)  # Format (100,5,1)
 
 		# === 5. Feature Extraction ===
 		cnn_features = cnn_block(input_cnn, **dict_params)
-		lstm_features = lstm_block(input_lstm, **dict_params)
+		gru_features = gru_block(input_gru, **dict_params)
 
 		# === 6. Projection & Transformer ===
-		merged_features = tf.keras.layers.Concatenate()([cnn_features, lstm_features])
+		merged_features = tf.keras.layers.Concatenate()([cnn_features, gru_features])
 		merged_features = Dense(num_units_concat, activation="relu")(merged_features)
 		merged_features = Reshape((1, merged_features.shape[-1]))(merged_features)  # Add time dimension for Transformer
 		transformed_features = transformer_block(merged_features, **dict_params)
@@ -120,7 +124,7 @@ class ANN_model():
 		#ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
 		
 		# === 8. Build & Compile Model ===
-		model = Model(inputs=input_lstm, 
+		model = Model(inputs=input_gru, 
 					  outputs={#"num_clusters": num_clusters_output, 
 							   "bounds": bounds_output, 
 							   #"ranks": ranks_output

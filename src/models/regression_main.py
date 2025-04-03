@@ -309,7 +309,7 @@ class regression(Base):
 		def objective(trial):
 			num_units_CNN = trial.suggest_categorical('num_units_CNN', [int(2**x) for x in range(4,9)])
 			dim_kernel_CNN = trial.suggest_categorical('dim_kernel_CNN', [(int(1+2*x), int(1+2*x)) for x in range(1,6)])
-			num_units_LSTM = trial.suggest_categorical('num_units_LSTM', [int(2**x) for x in range(4,9)])
+			num_units_GRU = trial.suggest_categorical('num_units_GRU', [int(2**x) for x in range(4,9)])
 			num_units_concat = trial.suggest_categorical('num_units_concat', [int(2**x) for x in range(4,10)])
 			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [int(2**x) for x in range(4,10)])
 			batch_size = trial.suggest_categorical('batch_size', [int(2**x) for x in range(4,9)])
@@ -317,7 +317,7 @@ class regression(Base):
 			
 			dict_params = {'num_units_CNN':num_units_CNN, 
 						   'dim_kernel_CNN':dim_kernel_CNN,
-						   'num_units_LSTM':num_units_LSTM,
+						   'num_units_GRU':num_units_LSTM,
 						   'num_units_concat':num_units_concat,
 						   'num_units_output_bloc':num_units_output_bloc
 						   }
