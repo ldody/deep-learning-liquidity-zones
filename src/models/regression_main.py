@@ -357,7 +357,7 @@ class regression(Base):
 			
 		#TRIALS_PER_JOB = N_TRIALS // int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
 
-		study.optimize(objective, n_trials=1, timeout=79200)
+		study.optimize(objective, n_trials=1, timeout=43200)
 		print(study.best_trial)
 
 class LimitTrainingTime(tf.keras.callbacks.Callback):
