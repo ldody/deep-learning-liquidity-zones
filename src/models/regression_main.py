@@ -307,12 +307,12 @@ class regression(Base):
 		print('Starting BA')
 		
 		def objective(trial):
-			num_units_CNN = trial.suggest_categorical('num_units_CNN', [int(2**x) for x in range(4,9)])
+			num_units_CNN = trial.suggest_categorical('num_units_CNN', [int(2**x) for x in range(5,9)])
 			dim_kernel_CNN = trial.suggest_categorical('dim_kernel_CNN', [(int(1+2*x), int(1+2*x)) for x in range(1,6)])
-			num_units_GRU = trial.suggest_categorical('num_units_GRU', [int(2**x) for x in range(4,9)])
-			num_units_concat = trial.suggest_categorical('num_units_concat', [int(2**x) for x in range(4,10)])
-			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [int(2**x) for x in range(4,10)])
-			batch_size = trial.suggest_categorical('batch_size', [int(2**x) for x in range(4,9)])
+			num_units_GRU = trial.suggest_categorical('num_units_GRU', [int(2**x) for x in range(4,7)])
+			num_units_concat = trial.suggest_categorical('num_units_concat', [int(2**x) for x in range(5,10)])
+			num_units_output_bloc = trial.suggest_categorical('num_units_output_bloc', [int(2**x) for x in range(5,11)])
+			batch_size = trial.suggest_categorical('batch_size', [int(2**x) for x in range(6,11)])
 			num_epochs = trial.suggest_categorical('num_epochs', [100, 500, 1000, 1500, 2000])
 			
 			dict_params = {'num_units_CNN':num_units_CNN, 
@@ -345,7 +345,7 @@ class regression(Base):
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 			
 			print('Start fitting model')
-			callback = LimitTrainingTime(79200)
+			callback = LimitTrainingTime(80000)
 			history = model.fit(dataset, 
 								  epochs=num_epochs,  
 								  verbose=2,
@@ -353,11 +353,11 @@ class regression(Base):
 								  callbacks=[callback]
 								  )
 					  
-			return min(history.history['val_loss'])
+			return min(history.history['val_loss'][30:])
 			
 		#TRIALS_PER_JOB = N_TRIALS // int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
 
-		study.optimize(objective, n_trials=1)
+		study.optimize(objective, n_trials=1, timeout=79200)
 		print(study.best_trial)
 
 class LimitTrainingTime(tf.keras.callbacks.Callback):
