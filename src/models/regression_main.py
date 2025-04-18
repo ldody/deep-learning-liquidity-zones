@@ -359,7 +359,7 @@ class regression(Base):
 				raise optuna.exceptions.TrialPruned()
 				
 			else:
-			return min(history.history['val_loss'][30:])
+				return min(history.history['val_loss'][30:])
 			
 		#TRIALS_PER_JOB = N_TRIALS // int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
 
