@@ -345,14 +345,20 @@ class regression(Base):
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 			
 			print('Start fitting model')
-			callback = LimitTrainingTime(80000)
+			callback = LimitTrainingTime(43200)
+			start_time = time.time()
 			history = model.fit(dataset, 
 								  epochs=num_epochs,  
 								  verbose=2,
 								  validation_data=eval_dataset,
 								  callbacks=[callback]
 								  )
-					  
+			end_time = time.time()
+			
+			if end_time - start_time > 43200:
+				raise optuna.exceptions.TrialPruned()
+				
+			else:
 			return min(history.history['val_loss'][30:])
 			
 		#TRIALS_PER_JOB = N_TRIALS // int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
