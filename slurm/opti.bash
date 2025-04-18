@@ -6,7 +6,7 @@
 #SBATCH --mem-per-cpu=4000
 #SBATCH --mail-type=all
 #SBATCH --mail-user=leo.dody1@univ-lyon3.fr
-#SBATCH --output=/dev/null #/dev/null #ANN_model_%a.out
+#SBATCH --output=ANN_model_%a.out #/dev/null #ANN_model_%a.out
 #SBATCH --job-name=opti_model_%a
 #SBATCH --partition=c6420-ib100
 #SBATCH --array=0-4%5
