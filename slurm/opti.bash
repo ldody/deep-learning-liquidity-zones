@@ -9,7 +9,7 @@
 #SBATCH --output=/dev/null #/dev/null #ANN_model_%a.out
 #SBATCH --job-name=opti_model_%a
 #SBATCH --partition=c6420-ib100
-#SBATCH --array=0-400%10
+#SBATCH --array=0-400%5
 
 
 module purge
