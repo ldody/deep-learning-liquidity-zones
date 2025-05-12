@@ -1,15 +1,14 @@
 #!/bin/sh
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=1
-#SBATCH --ntasks-per-node=40
+#SBATCH --ntasks-per-node=1
 #SBATCH --mem-per-cpu=4000
 #SBATCH --mail-type=all
 #SBATCH --mail-user=leo.dody1@univ-lyon3.fr
 #SBATCH --output=/dev/null #/dev/null #ANN_model_%a.out
 #SBATCH --job-name=opti_model_%a
 #SBATCH --partition=c6420-ib100
-#SBATCH --array=0-400%5
+#SBATCH --array=0-50%1
 
 
 module purge
