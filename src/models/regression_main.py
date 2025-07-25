@@ -304,6 +304,45 @@ class regression(Base):
 					print('Waiting for DB creation')
 					time.sleep(60)
 		
+		def func_prepro(i, row, lock, arrays_dict):
+
+			with lock:
+				self.to_process = self.df_assets.loc[i]
+				self.load_data()
+				df_data = self.df_data.copy()
+				df_ohlcv = self.df_ohlcv.copy()
+				to_process = self.to_process.copy()
+			
+			data, ohlcv, n_interval, scaler_p, scaler_v, scaler_r, scaler_nb = rprepro().preprocessing(df_data=df_data, df_ohlcv=df_ohlcv, new_var=to_process['1min'])
+
+			x_train, x_test, y_train, y_test = train_test_split(ohlcv, data, test_size=0.3, shuffle=False)
+			_, _, n_train, n_test = train_test_split(ohlcv, n_interval, test_size=0.3, shuffle=False)
+			
+			with lock:
+				for key in dict(arrays_dict):
+						
+					updated_list = arrays_dict[key]
+					updated_list.append(locals()[key])
+					arrays_dict[key] = updated_list
+
+		try: 
+			with open(os.path.join(self.path_model, 'prepro.json'), 'rb') as file:
+				pickle.load(file)
+	
+		except:
+			Parallel(n_jobs=-1)(delayed(func_prepro)(i, row, lock, arrays_dict) for i, row in self.df_assets.iterrows())
+			
+			arrays_dict = dict(arrays_dict)
+
+			for key, arrays in arrays_dict.items():
+				try:
+					arrays_dict[key] = np.concatenate(arrays, axis=0)
+				except:
+					pass
+					
+			with open(os.path.join(self.path_model, 'prepro.json'), 'wb') as file:
+				pickle.dump(arrays_dict, file)
+		
 		print('Starting BA')
 		
 		def objective(trial):
