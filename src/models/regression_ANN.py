@@ -165,7 +165,7 @@ class ANN_model():
 		return model
 	
 	@tf.function	
-	def bounds_loss(self, y_true, y_pred):
+	def bounds_loss(y_true, y_pred):
 		return (self.recall_surface_metric(y_true, y_pred) * 2  + 
 				self.precision_surface_metric(y_true, y_pred) * 2 + 
 				self.F1_score(y_true, y_pred) +
@@ -173,11 +173,11 @@ class ANN_model():
 				)
 	
 	@tf.function	
-	def surface_intersection(self, p_min, p_max, t_min, t_max):
+	def surface_intersection(p_min, p_max, t_min, t_max):
 		return tf.maximum(0.0, tf.minimum(p_max, t_max) - tf.maximum(p_min, t_min))
 	
 	@tf.function
-	def recall_surface_metric(self, y_true, y_pred):
+	def recall_surface_metric(y_true, y_pred):
 		p_min = y_pred[..., 0]
 		p_max = y_pred[..., 1]
 
@@ -194,7 +194,7 @@ class ANN_model():
 		return 1 - tf.reduce_mean(recall)
 
 	@tf.function
-	def precision_surface_metric(self, y_true, y_pred):
+	def precision_surface_metric(y_true, y_pred):
 		p_min = y_pred[..., 0]
 		p_max = y_pred[..., 1]
 
@@ -211,7 +211,7 @@ class ANN_model():
 		return 1 - tf.reduce_mean(precision)
 	
 	@tf.function
-	def F1_score(self, y_true, y_pred):
+	def F1_score(y_true, y_pred):
 		r = 1 - self.recall_surface_metric(y_true, y_pred)
 		p = 1 - self.precision_surface_metric(y_true, y_pred)
 
@@ -219,7 +219,7 @@ class ANN_model():
 		return 1 - F1
 
 	@tf.function
-	def overlap_metric(self, y_true, y_pred):
+	def overlap_metric(y_true, y_pred):
 		# --- Pénalité chevauchement des intervalles prédits ---
 		pred_n0 = y_pred[:,1:,0]    # shape (batch, 9)
 		pred_n1_1 = y_pred[:,:-1,1] # shape (batch, 9)
