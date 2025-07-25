@@ -67,12 +67,12 @@ class ANN_model():
 		dict_params = kwargs
 		
 		def force_loc_9_2_to_one(x):
-			# x: (batch_size, 10, 3)
+			# x: (batch_size, 10, 2)
 			# Créer un tensor identique à x
 			x_new = tf.identity(x)
 			
 			# Extraire x[:,9,2]
-			values = x_new[:,9,2]
+			values = x_new[:,9,1]
 			
 			# Condition: si > 1
 			condition = values > 1.0
