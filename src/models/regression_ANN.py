@@ -66,6 +66,29 @@ class ANN_model():
 		
 		dict_params = kwargs
 		
+		def force_loc_9_2_to_one(x):
+			# x: (batch_size, 10, 3)
+			# Créer un tensor identique à x
+			x_new = tf.identity(x)
+			
+			# Extraire x[:,9,2]
+			values = x_new[:,9,2]
+			
+			# Condition: si > 1
+			condition = values > 1.0
+			
+			# Remplacer par 1 si condition vraie, sinon garder la valeur originale
+			updated_values = tf.where(condition, tf.ones_like(values), values)
+			
+			# Mettre à jour x_new[:,9,2] = 1
+			# Pour cela on utilise tensor_scatter_nd_update
+			indices = tf.stack([tf.range(tf.shape(x)[0]), 
+								tf.fill([tf.shape(x)[0]], timesteps-1), 
+								tf.fill([tf.shape(x)[0]], 1)], axis=1)
+			
+			x_new = tf.tensor_scatter_nd_update(x_new, indices, updated_values)
+			return x_new
+		
 		# === 1. Transformer Block ===
 		def transformer_block(inputs, num_heads=4, dim_ff=128, dropout_rate=0.1, **kwargs):
 			"""Transformer Encoder Block"""
@@ -116,96 +139,95 @@ class ANN_model():
 		transformed_features = transformer_block(merged_features, **dict_params)
 
 		# === 7. Outputs ===
-		#num_clusters_output = Dense(timesteps + 1, activation="softmax", name="num_clusters")(transformed_features[:, 0, :])  # Classification
 		min_output = Dense(timesteps, activation='sigmoid')(transformed_features[:, 0, :])
-		range_output = Dense(timesteps, activation="softplus")(transformed_features[:, 0, :])
-		#bounds_output = Dense(2 * timesteps, activation="sigmoid")(bounds_output)  # Regression
-		#bounds_output = Reshape((timesteps, 2), name="bounds")(bounds_output)
-		bounds_output = Lambda(lambda x: tf.stack([x[0], x[0] + x[1]], axis=-1), name="bounds")([min_output, range_output])
-		#ranks_output = Dense(timesteps, activation="softmax", name="ranks")(transformed_features[:, 0, :])  # Classification
+		range_output = Dense(timesteps, activation="sigmoid")(transformed_features[:, 0, :])        
+		max_output = tf.keras.layers.Add()([min_output, range_output])
+
+		bounds_output = tf.stack([min_output, max_output], axis=-1)
+
+		bounds_output = tf.keras.layers.Lambda(force_loc_9_2_to_one)(outputs)
 		
 		# === 8. Build & Compile Model ===
 		model = Model(inputs=input_gru, 
-					  outputs={#"num_clusters": num_clusters_output, 
-							   "bounds": bounds_output, 
-							   #"ranks": ranks_output
+					  outputs={"bounds": bounds_output#"ranks": ranks_output
 							   }
 							   )
 		
 		
 		model.compile(optimizer="adam", 
-					  loss={#"num_clusters": "sparse_categorical_crossentropy", 
-							"bounds": self.bounds_loss, 
-							#"ranks": self.rank_loss
+					  loss={"bounds": self.bounds_loss
 							},
-					  metrics={#"num_clusters": ["mae",'accuracy'], 
-							   "bounds": self.bounds_metric, 
-							   #"ranks": ["mae",'accuracy']
+					  metrics={"bounds": [self.recall_surface_metric, self.precision_surface_metric, self.F1_score, self.overlap_metric]
 							   }, 
 					  #loss_weights={'num_clusters': 0.5, 'bounds': 1.5, 'ranks': 0.5}
 					  )
 					  
 		return model
-
+		
 	def bounds_loss(self, y_true, y_pred):
-		"""
-		number of clusters output loss function of the model.
-		"""
-		mask = tf.greater(y_true, 0)
+		return (self.recall_surface_metric(y_true, y_pred) * 2  + 
+				self.precision_surface_metric(y_true, y_pred) * 2 + 
+				self.F1_score(y_true, y_pred) +
+				self.overlap_metric(y_true, y_pred)
+				)
 		
-		# selecting only real clusters
-		y_true_filtered = tf.boolean_mask(y_true, mask)
-		y_pred_filtered = tf.boolean_mask(y_pred, mask)
-		
-		condition_1 = tf.greater(y_pred_filtered[0], y_true_filtered[0])  # min pred > min true
-		condition_2 = tf.less(y_pred_filtered[1], y_true_filtered[1])  # max pred < max true
-		
-		condition_3 = tf.greater(y_pred_filtered[1], y_true_filtered[0]) # max pred > min true
-		condition_4 = tf.less(y_pred_filtered[0], y_true_filtered[1]) # min pred < max true
-		
-		combined_condition_1 = tf.logical_and(condition_1, condition_4)
-		combined_condition_2 = tf.logical_and(condition_2, condition_3)
-	
-		# cond 1
-		exp_loss_1 = tf.exp(tf.abs(y_true_filtered[0] - y_pred_filtered[0]) + 1)  # exp loss
-		mae_loss_1 = tf.abs(y_true_filtered[0] - y_pred_filtered[0])         # MAE
-		
-		# cond 2
-		exp_loss_2 = tf.exp(tf.abs(y_true_filtered[1] - y_pred_filtered[1]) + 1)  # exp loss
-		mae_loss_2 = tf.abs(y_true_filtered[1] - y_pred_filtered[1])         # MAE
-		
-		# applying loss according to condition
-		diff_1 = tf.reduce_mean(tf.where(condition_1, mae_loss_1, exp_loss_1))
-		diff_2 = tf.reduce_mean(tf.where(condition_2, mae_loss_2, exp_loss_2))
-		
-		return diff_1 + diff_2
-		
-	def bounds_metric(self, y_true, y_pred):
-		"""
-		number of clusters output metric function of the model.
-		"""
-		mask = tf.greater(y_true, 0)
-		
-		# selecting only real clusters
-		y_true_filtered = tf.boolean_mask(y_true, mask)
-		y_pred_filtered = tf.boolean_mask(y_pred, mask)
-		
-		return tf.abs(y_true - y_pred) 
-		
-		
-	def rank_loss(self, y_true, y_pred):
-		"""
-		rank output loss function of the model.
-		"""
-		mask = tf.greater(y_true, 0.01)
-		y_true_filtered = tf.boolean_mask(y_true, mask)
-		y_pred_filtered = tf.boolean_mask(y_pred, mask)
+	def surface_intersection(self, p_min, p_max, t_min, t_max):
+		return tf.maximum(0.0, tf.minimum(p_max, t_max) - tf.maximum(p_min, t_min))
 
-		# Calculer la différence absolue entre les valeurs réelles et prédites, en évitant argsort
-		rank_difference = tf.abs(tf.cast(y_true_filtered, tf.float32) - tf.cast(y_pred_filtered, tf.float32))
+	def recall_surface_metric(self, y_true, y_pred):
+		p_min = y_pred[..., 0]
+		p_max = y_pred[..., 1]
 
-		# Retourner la moyenne de la perte
-		return tf.reduce_mean(rank_difference)
+		t_min = y_true[..., 0]
+		t_max = y_true[..., 1]
+
+		true_mask = tf.cast(tf.reduce_sum(y_true, axis=-1) > 0, tf.float32)
+
+		surface_true = tf.reduce_sum((t_max - t_min) * true_mask, axis=1) + 1e-6
+		inter = self.surface_intersection(p_min, p_max, t_min, t_max) * true_mask 
+		surface_inter = tf.reduce_sum(inter, axis=1)
+
+		recall = surface_inter / surface_true
+		return 1 - tf.reduce_mean(recall)
+
+	def precision_surface_metric(self, y_true, y_pred):
+		p_min = y_pred[..., 0]
+		p_max = y_pred[..., 1]
+
+		t_min = y_true[..., 0]
+		t_max = y_true[..., 1]
+
+		true_mask = tf.cast(tf.reduce_sum(y_true, axis=-1) > 0, tf.float32)
+		
+		surface_pred = tf.reduce_sum((p_max - p_min), axis=1) + 1e-6
+		inter = self.surface_intersection(p_min, p_max, t_min, t_max) * true_mask
+		surface_inter = tf.reduce_sum(inter, axis=1)
+
+		precision = surface_inter / surface_pred
+		return 1 - tf.reduce_mean(precision)
+
+	def F1_score(self, y_true, y_pred):
+		r = 1 - self.recall_surface_metric(y_true, y_pred)
+		p = 1 - self.precision_surface_metric(y_true, y_pred)
+
+		F1 = (2 * r * p) / (r + p)
+		return 1 - F1
+
+	def overlap_metric(self, y_true, y_pred):
+		# --- Pénalité chevauchement des intervalles prédits ---
+		pred_n0 = y_pred[:,1:,0]    # shape (batch, 9)
+		pred_n1_1 = y_pred[:,:-1,1] # shape (batch, 9)
+		
+		# Calculer la différence
+		diff = pred_n0 - pred_n1_1  # shape (batch, 9)
+		
+		# Si diff < 0 => violation de la contrainte
+		violations = tf.nn.relu(-diff)  # max(0, -diff)
+		
+		# Somme des violations sur l'axe des steps et batch
+		overlap_loss = tf.reduce_mean(violations)*10
+		
+		return overlap_loss
 		
 		
 #convert str to bool for argparse
