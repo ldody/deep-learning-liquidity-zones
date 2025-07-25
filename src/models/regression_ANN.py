@@ -149,31 +149,34 @@ class ANN_model():
 		
 		# === 8. Build & Compile Model ===
 		model = Model(inputs=input_gru, 
-					  outputs={"bounds": bounds_output#"ranks": ranks_output
+					  outputs={"bounds": bounds_output
 							   }
 							   )
 		
 		
 		model.compile(optimizer="adam", 
-					  loss={"bounds": self.bounds_loss
+					  loss={"bounds": bounds_loss
 							},
-					  metrics={"bounds": [self.recall_surface_metric, self.precision_surface_metric, self.F1_score, self.overlap_metric]
+					  metrics={"bounds": [recall_surface_metric, precision_surface_metric, F1_score, overlap_metric]
 							   }, 
 					  #loss_weights={'num_clusters': 0.5, 'bounds': 1.5, 'ranks': 0.5}
 					  )
 					  
 		return model
-		
+	
+	@tf.function	
 	def bounds_loss(self, y_true, y_pred):
 		return (self.recall_surface_metric(y_true, y_pred) * 2  + 
 				self.precision_surface_metric(y_true, y_pred) * 2 + 
 				self.F1_score(y_true, y_pred) +
 				self.overlap_metric(y_true, y_pred)
 				)
-		
+	
+	@tf.function	
 	def surface_intersection(self, p_min, p_max, t_min, t_max):
 		return tf.maximum(0.0, tf.minimum(p_max, t_max) - tf.maximum(p_min, t_min))
-
+	
+	@tf.function
 	def recall_surface_metric(self, y_true, y_pred):
 		p_min = y_pred[..., 0]
 		p_max = y_pred[..., 1]
@@ -190,6 +193,7 @@ class ANN_model():
 		recall = surface_inter / surface_true
 		return 1 - tf.reduce_mean(recall)
 
+	@tf.function
 	def precision_surface_metric(self, y_true, y_pred):
 		p_min = y_pred[..., 0]
 		p_max = y_pred[..., 1]
@@ -205,7 +209,8 @@ class ANN_model():
 
 		precision = surface_inter / surface_pred
 		return 1 - tf.reduce_mean(precision)
-
+	
+	@tf.function
 	def F1_score(self, y_true, y_pred):
 		r = 1 - self.recall_surface_metric(y_true, y_pred)
 		p = 1 - self.precision_surface_metric(y_true, y_pred)
@@ -213,6 +218,7 @@ class ANN_model():
 		F1 = (2 * r * p) / (r + p)
 		return 1 - F1
 
+	@tf.function
 	def overlap_metric(self, y_true, y_pred):
 		# --- Pénalité chevauchement des intervalles prédits ---
 		pred_n0 = y_pred[:,1:,0]    # shape (batch, 9)
