@@ -164,76 +164,76 @@ class ANN_model():
 					  
 		return model
 	
-	@tf.function	
-	def bounds_loss(y_true, y_pred):
-		return (self.recall_surface_metric(y_true, y_pred) * 2  + 
-				self.precision_surface_metric(y_true, y_pred) * 2 + 
-				self.F1_score(y_true, y_pred) +
-				self.overlap_metric(y_true, y_pred)
-				)
+@tf.function	
+def bounds_loss(y_true, y_pred):
+	return (recall_surface_metric(y_true, y_pred) * 2  + 
+			precision_surface_metric(y_true, y_pred) * 2 + 
+			F1_score(y_true, y_pred) +
+			overlap_metric(y_true, y_pred)
+			)
+
+@tf.function	
+def surface_intersection(p_min, p_max, t_min, t_max):
+	return tf.maximum(0.0, tf.minimum(p_max, t_max) - tf.maximum(p_min, t_min))
+
+@tf.function
+def recall_surface_metric(y_true, y_pred):
+	p_min = y_pred[..., 0]
+	p_max = y_pred[..., 1]
+
+	t_min = y_true[..., 0]
+	t_max = y_true[..., 1]
+
+	true_mask = tf.cast(tf.reduce_sum(y_true, axis=-1) > 0, tf.float32)
+
+	surface_true = tf.reduce_sum((t_max - t_min) * true_mask, axis=1) + 1e-6
+	inter = surface_intersection(p_min, p_max, t_min, t_max) * true_mask 
+	surface_inter = tf.reduce_sum(inter, axis=1)
+
+	recall = surface_inter / surface_true
+	return 1 - tf.reduce_mean(recall)
+
+@tf.function
+def precision_surface_metric(y_true, y_pred):
+	p_min = y_pred[..., 0]
+	p_max = y_pred[..., 1]
+
+	t_min = y_true[..., 0]
+	t_max = y_true[..., 1]
+
+	true_mask = tf.cast(tf.reduce_sum(y_true, axis=-1) > 0, tf.float32)
 	
-	@tf.function	
-	def surface_intersection(p_min, p_max, t_min, t_max):
-		return tf.maximum(0.0, tf.minimum(p_max, t_max) - tf.maximum(p_min, t_min))
+	surface_pred = tf.reduce_sum((p_max - p_min), axis=1) + 1e-6
+	inter = surface_intersection(p_min, p_max, t_min, t_max) * true_mask
+	surface_inter = tf.reduce_sum(inter, axis=1)
+
+	precision = surface_inter / surface_pred
+	return 1 - tf.reduce_mean(precision)
+
+@tf.function
+def F1_score(y_true, y_pred):
+	r = 1 - recall_surface_metric(y_true, y_pred)
+	p = 1 - precision_surface_metric(y_true, y_pred)
+
+	F1 = (2 * r * p) / (r + p)
+	return 1 - F1
+
+@tf.function
+def overlap_metric(y_true, y_pred):
+	# --- Pénalité chevauchement des intervalles prédits ---
+	pred_n0 = y_pred[:,1:,0]    # shape (batch, 9)
+	pred_n1_1 = y_pred[:,:-1,1] # shape (batch, 9)
 	
-	@tf.function
-	def recall_surface_metric(y_true, y_pred):
-		p_min = y_pred[..., 0]
-		p_max = y_pred[..., 1]
-
-		t_min = y_true[..., 0]
-		t_max = y_true[..., 1]
-
-		true_mask = tf.cast(tf.reduce_sum(y_true, axis=-1) > 0, tf.float32)
-
-		surface_true = tf.reduce_sum((t_max - t_min) * true_mask, axis=1) + 1e-6
-		inter = self.surface_intersection(p_min, p_max, t_min, t_max) * true_mask 
-		surface_inter = tf.reduce_sum(inter, axis=1)
-
-		recall = surface_inter / surface_true
-		return 1 - tf.reduce_mean(recall)
-
-	@tf.function
-	def precision_surface_metric(y_true, y_pred):
-		p_min = y_pred[..., 0]
-		p_max = y_pred[..., 1]
-
-		t_min = y_true[..., 0]
-		t_max = y_true[..., 1]
-
-		true_mask = tf.cast(tf.reduce_sum(y_true, axis=-1) > 0, tf.float32)
-		
-		surface_pred = tf.reduce_sum((p_max - p_min), axis=1) + 1e-6
-		inter = self.surface_intersection(p_min, p_max, t_min, t_max) * true_mask
-		surface_inter = tf.reduce_sum(inter, axis=1)
-
-		precision = surface_inter / surface_pred
-		return 1 - tf.reduce_mean(precision)
+	# Calculer la différence
+	diff = pred_n0 - pred_n1_1  # shape (batch, 9)
 	
-	@tf.function
-	def F1_score(y_true, y_pred):
-		r = 1 - self.recall_surface_metric(y_true, y_pred)
-		p = 1 - self.precision_surface_metric(y_true, y_pred)
-
-		F1 = (2 * r * p) / (r + p)
-		return 1 - F1
-
-	@tf.function
-	def overlap_metric(y_true, y_pred):
-		# --- Pénalité chevauchement des intervalles prédits ---
-		pred_n0 = y_pred[:,1:,0]    # shape (batch, 9)
-		pred_n1_1 = y_pred[:,:-1,1] # shape (batch, 9)
-		
-		# Calculer la différence
-		diff = pred_n0 - pred_n1_1  # shape (batch, 9)
-		
-		# Si diff < 0 => violation de la contrainte
-		violations = tf.nn.relu(-diff)  # max(0, -diff)
-		
-		# Somme des violations sur l'axe des steps et batch
-		overlap_loss = tf.reduce_mean(violations)*10
-		
-		return overlap_loss
+	# Si diff < 0 => violation de la contrainte
+	violations = tf.nn.relu(-diff)  # max(0, -diff)
+	
+	# Somme des violations sur l'axe des steps et batch
+	overlap_loss = tf.reduce_mean(violations)*10
+	
+	return overlap_loss
 		
 		
 #convert str to bool for argparse
