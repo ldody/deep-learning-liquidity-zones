@@ -396,7 +396,8 @@ class regression(Base):
 			#early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True, start_from_epoch=200)
 			
 			model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
-			
+			print(model.output_names)
+
 			print('Start fitting model')
 			callback = LimitTrainingTime(43200)
 			start_time = time.time()
