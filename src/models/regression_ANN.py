@@ -145,7 +145,7 @@ class ANN_model():
 
 		bounds_output = tf.keras.layers.Lambda(lambda x: tf.stack(x, axis=-1))([min_output, max_output])
 
-		bounds_output = tf.keras.layers.Lambda(force_loc_9_2_to_one)(outputs)
+		bounds_output = tf.keras.layers.Lambda(force_loc_9_2_to_one)(bounds_output)
 		
 		# === 8. Build & Compile Model ===
 		model = Model(inputs=input_gru, 
