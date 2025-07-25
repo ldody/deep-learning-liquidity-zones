@@ -149,7 +149,7 @@ class ANN_model():
 		
 		# === 8. Build & Compile Model ===
 		model = Model(inputs=input_gru, 
-					  outputs=bounds_outpout
+					  outputs=bounds_output
 							   )
 		
 		
