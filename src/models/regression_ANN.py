@@ -147,15 +147,20 @@ class ANN_model():
 
 		bounds_output = tf.keras.layers.Lambda(force_loc_9_2_to_one)(bounds_output)
 		
+		outputs = {"bounds": bounds_output}
+		
 		# === 8. Build & Compile Model ===
 		model = Model(inputs=input_gru, 
-					  outputs=bounds_output
+					  outputs={"bounds": bounds_output
+					  }
 							   )
 		
 		
 		model.compile(optimizer="adam", 
-					  loss=bounds_loss,
-					  metrics=[recall_surface_metric, precision_surface_metric, F1_score, overlap_metric], 
+					  loss={"bounds": bounds_loss
+					  },
+					  metrics={"bounds": [recall_surface_metric, precision_surface_metric, F1_score, overlap_metric]
+					  }, 
 					  #loss_weights={'num_clusters': 0.5, 'bounds': 1.5, 'ranks': 0.5}
 					  )
 					  
