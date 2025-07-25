@@ -304,6 +304,20 @@ class regression(Base):
 					print('Waiting for DB creation')
 					time.sleep(60)
 		
+		manager = multiprocessing.Manager()
+		lock = manager.Lock()
+		
+		arrays_dict = manager.dict({'x_train': [],
+					  'x_test': [],
+					  'y_train': [],
+					  'y_test': [],
+					  'n_train': [],
+					  'n_test': [],
+					  'scaler_p': [],
+					  'scaler_v': [],
+					  'scaler_r': [],
+					  'scaler_nb': []})
+					  
 		def func_prepro(i, row, lock, arrays_dict):
 
 			with lock:
