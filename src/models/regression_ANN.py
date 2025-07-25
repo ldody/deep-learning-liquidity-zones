@@ -145,7 +145,7 @@ class ANN_model():
 
 		bounds_output = tf.keras.layers.Lambda(lambda x: tf.stack(x, axis=-1))([min_output, max_output])
 
-		bounds_output = tf.keras.layers.Lambda(force_loc_9_2_to_one)(bounds_output)
+		bounds_output = tf.keras.layers.Lambda(force_loc_9_2_to_one, name='bounds')(bounds_output)
 		
 		outputs = {"bounds": bounds_output}
 		
@@ -160,7 +160,7 @@ class ANN_model():
 					  loss={"bounds": bounds_loss
 					  },
 					  metrics={"bounds": [recall_surface_metric, precision_surface_metric, F1_score, overlap_metric]
-                      }, 
+					  }, 
 					  #loss_weights={'num_clusters': 0.5, 'bounds': 1.5, 'ranks': 0.5}
 					  )
 					  
