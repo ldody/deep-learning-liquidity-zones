@@ -159,8 +159,7 @@ class ANN_model():
 		model.compile(optimizer="adam", 
 					  loss={"bounds": bounds_loss
 					  },
-					  metrics={"bounds": [recall_surface_metric, precision_surface_metric, F1_score, overlap_metric]
-					  }, 
+					  metrics=[recall_surface_metric, precision_surface_metric, F1_score, overlap_metric], 
 					  #loss_weights={'num_clusters': 0.5, 'bounds': 1.5, 'ranks': 0.5}
 					  )
 					  
