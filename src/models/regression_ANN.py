@@ -143,7 +143,7 @@ class ANN_model():
 		range_output = Dense(timesteps, activation="sigmoid")(transformed_features[:, 0, :])        
 		max_output = tf.keras.layers.Add()([min_output, range_output])
 
-		bounds_output = tf.stack([min_output, max_output], axis=-1)
+		bounds_output = tf.keras.layers.Lambda(lambda x: tf.stack(x, axis=-1))([min_output, max_output])
 
 		bounds_output = tf.keras.layers.Lambda(force_loc_9_2_to_one)(outputs)
 		
