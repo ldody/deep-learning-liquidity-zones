@@ -223,21 +223,24 @@ class regression(Base):
 			with open(os.path.join(self.path_model, 'prepro.json'), 'wb') as file:
 				pickle.dump(arrays_dict, file)
 		
-		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {#"num_clusters": arrays_dict['n_train'], 
-																			   "bounds": arrays_dict['y_train'][:,:,:2], 
-																			   #"ranks": arrays_dict['y_train'][:,:,-1]
-																			   }))
+		optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
+		STUDY_NAME = 'optuna_study'
+		DB_PATH = os.path.join(self.path_model, 'ann_optimization.log')
+		storage = optuna.storages.JournalStorage(
+			optuna.storages.journal.JournalFileBackend(DB_PATH),
+		)
 		
-		val_size = int(dataset.cardinality().numpy() * 0.3)
+		dict_params = optuna.load_study(storage=storage, study_name=STUDY_NAME).best_params
 		
-		train_dataset = dataset.take(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
-		eval_dataset = dataset.skip(val_size).batch(64).prefetch(tf.data.AUTOTUNE)
-		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {#"num_clusters": arrays_dict['n_test'], 
-																				   "bounds": arrays_dict['y_test'][:,:,:2], 
-																				   #"ranks": arrays_dict['y_test'][:,:,-1]
-																				   }))
-		test_dataset = test_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
-		dataset = dataset.batch(64).prefetch(tf.data.AUTOTUNE)
+		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"bounds": arrays_dict['y_train'][:,:,:2]}))
+		
+		val_size = int(dataset.cardinality().numpy() * 0.7)
+		
+		train_dataset = dataset.take(val_size).batch(dict_params['batch_size']).prefetch(tf.data.AUTOTUNE)
+		eval_dataset = dataset.skip(val_size).batch(dict_params['batch_size']).prefetch(tf.data.AUTOTUNE)
+		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"bounds": arrays_dict['y_test'][:,:,:2]}))
+		test_dataset = test_dataset.batch(dict_params['batch_size']).prefetch(tf.data.AUTOTUNE)
+		dataset = dataset.batch(dict_params['batch_size']).prefetch(tf.data.AUTOTUNE)
 		
 		csv_logger_train = tf.keras.callbacks.CSVLogger(os.path.join(self.path_model, 'training_combined_log.csv'), append=True)
 		csv_logger_eval = tf.keras.callbacks.CSVLogger(os.path.join(self.path_model, 'eval_combined_log.csv'), append=True)
@@ -249,7 +252,7 @@ class regression(Base):
 																 save_freq="epoch",
 																 verbose=1)
 		
-		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred)
+		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 		
 		if all(x in os.listdir(self.path_model) for x in ['training_combined_log.csv','last_checkpoint.keras']):
 			last_epoch = pd.read_csv(os.path.join(self.path_model, 'training_combined_log.csv'))['epoch'].iloc[-1] + 1
@@ -261,7 +264,7 @@ class regression(Base):
 			last_epoch = 0
 		
 		model.fit(dataset, 
-				  epochs=1000,  
+				  epochs=dict_params['num_epochs'],  
 				  verbose=2,
 				  initial_epoch=last_epoch,
 				  validation_data=test_dataset,
