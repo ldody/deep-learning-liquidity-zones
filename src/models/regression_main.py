@@ -255,6 +255,13 @@ class regression(Base):
 																 save_freq="epoch",
 																 verbose=1)
 		
+		checkpoint_best_eval = tf.keras.callbacks.ModelCheckpoint(os.path.join(self.path_model, 'best_eval.keras'),          # Chemin du fichier où sauvegarder le modèle
+																  monitor='val_loss',                # Ce qu'on veut surveiller
+																  save_best_only=True,              # Sauvegarde uniquement le meilleur modèle
+																  mode='min',                       # On veut minimiser la val_loss
+																  verbose=1                         # Affiche un message à chaque sauvegarde
+																  )
+		
 		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 		
 		print(train_dataset)
@@ -275,7 +282,7 @@ class regression(Base):
 				  verbose=2,
 				  initial_epoch=last_epoch,
 				  validation_data=test_dataset,
-				  callbacks=[csv_logger_train, checkpoint_callback])
+				  callbacks=[csv_logger_train, checkpoint_callback, checkpoint_best_eval])
 				  
 		model.save(os.path.join(self.path_model, 'ANN_model.keras'))
 		

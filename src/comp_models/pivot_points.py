@@ -147,9 +147,9 @@ class PivotPoints():
 		
 		def launch():
 			test = self.df_ohlcv.copy()
-			test['precision'] = 0
-			test['recall'] = 0
-			test['F1'] = 0
+			test['precision'] = 0.0
+			test['recall'] = 0.0
+			test['F1'] = 0.0
 
 			for i, row in test.iterrows():
 				tmp = self.df_data.loc[self.df_data['index'] == row['Local Time'], ['price_min','price_max']].to_numpy()
@@ -198,7 +198,7 @@ class PivotPoints():
 		
 		results = self.func_pivots(self.df_assets.iloc[self.job_id])
 		
-		#write(os.path.join(self.results_path, 'PivotPoints.parquet.gzip'), results, compression='GZIP', append=False)
+		#write(os.path.join(self.results_path, 'PivotPoints.parquet.gzip'), results, compression='GZIP', append=True)
 		
 		print(results)
 
