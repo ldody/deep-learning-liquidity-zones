@@ -231,6 +231,7 @@ class regression(Base):
 		)
 		
 		dict_params = optuna.load_study(storage=storage, study_name=STUDY_NAME).best_params
+		print(optuna.load_study(storage=storage, study_name=STUDY_NAME))
 		print(dict_params)
 		
 		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"bounds": arrays_dict['y_train'][:,:,:2]})).shuffle(42)

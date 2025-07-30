@@ -135,6 +135,7 @@ class PivotPoints():
 				for a in A
 			])
 			
+			print(interval_covered)
 			FN = np.sum(~interval_covered)       # Intervalles sans valeur détectée
 
 			# Calcul des métriques
@@ -154,6 +155,7 @@ class PivotPoints():
 				tmp = self.df_data.loc[self.df_data['index'] == row['Local Time'], ['price_min','price_max']].to_numpy()
 				
 				p, r, f = compute_metrics(tmp, row[['Pivot','R1','S1','R2','S2','R3','S3']].T)
+				print(p, r, f)
 				
 				test.loc[test['Local Time'] == row['Local Time'], 'precision'] = p
 				test.loc[test['Local Time'] == row['Local Time'], 'recall'] = r
