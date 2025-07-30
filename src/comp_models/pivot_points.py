@@ -186,6 +186,19 @@ class PivotPoints():
 		write(os.path.join(self.results_path, 'PivotPoints.parquet.gzip'), results, compression='GZIP', append=False)
 		
 		print(results)
+	
+	
+	def OAT(self):
+		"""
+		Running script with slurm array jobs
+		"""
+		self.get_files()
+		
+		results = self.func_pivots(self.df_assets.iloc[self.job_id])
+		
+		#write(os.path.join(self.results_path, 'PivotPoints.parquet.gzip'), results, compression='GZIP', append=False)
+		
+		print(results)
 
 		
 #convert str to bool for argparse
@@ -203,9 +216,13 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--job_id', type=int, default=0)
 	parser.add_argument('--slurm_array', '-sa', type=str2bool, default=False)
+	parser.add_argument('--oat', '-oat', type=str2bool, default=False)
 	args = parser.parse_args()
 	
 	reg = PivotPoints(args.job_id)
 
 	if args.slurm_array:
 		reg.array_process()
+		
+	if args.oat:
+		reg.OAT()

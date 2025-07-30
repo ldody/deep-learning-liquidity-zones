@@ -231,13 +231,15 @@ class regression(Base):
 		)
 		
 		dict_params = optuna.load_study(storage=storage, study_name=STUDY_NAME).best_params
+		print(dict_params)
 		
-		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"bounds": arrays_dict['y_train'][:,:,:2]}))
+		dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_train'], {"bounds": arrays_dict['y_train'][:,:,:2]})).shuffle(42)
 		
 		val_size = int(dataset.cardinality().numpy() * 0.7)
 		
 		train_dataset = dataset.take(val_size).batch(dict_params['batch_size']).prefetch(tf.data.AUTOTUNE)
 		eval_dataset = dataset.skip(val_size).batch(dict_params['batch_size']).prefetch(tf.data.AUTOTUNE)
+		
 		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"bounds": arrays_dict['y_test'][:,:,:2]}))
 		test_dataset = test_dataset.batch(dict_params['batch_size']).prefetch(tf.data.AUTOTUNE)
 		dataset = dataset.batch(dict_params['batch_size']).prefetch(tf.data.AUTOTUNE)
@@ -254,6 +256,10 @@ class regression(Base):
 		
 		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 		
+		print(train_dataset)
+		print(eval_dataset)
+		print(model)
+		
 		if all(x in os.listdir(self.path_model) for x in ['training_combined_log.csv','last_checkpoint.keras']):
 			last_epoch = pd.read_csv(os.path.join(self.path_model, 'training_combined_log.csv'))['epoch'].iloc[-1] + 1
 			
@@ -263,7 +269,7 @@ class regression(Base):
 		else:
 			last_epoch = 0
 		
-		model.fit(dataset, 
+		model.fit(train_dataset, 
 				  epochs=dict_params['num_epochs'],  
 				  verbose=2,
 				  initial_epoch=last_epoch,
@@ -463,6 +469,7 @@ if __name__ == "__main__":
 		reg.array_process()
 		
 	elif args.combined:
+		print('launch combined')
 		reg.combined_data_process()
 	
 	elif args.bayesian_opti:
