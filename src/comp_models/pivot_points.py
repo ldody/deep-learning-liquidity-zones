@@ -154,8 +154,10 @@ class PivotPoints():
 			for i, row in test.iterrows():
 				tmp = self.df_data.loc[self.df_data['index'] == row['Local Time'], ['price_min','price_max']].to_numpy()
 				
-				p, r, f = compute_metrics(tmp, row[['Pivot','R1','S1','R2','S2','R3','S3']].T)
-				print(p, r, f)
+				try:
+					p, r, f = compute_metrics(tmp, row[['Pivot','R1','S1','R2','S2','R3','S3']].T)
+				except:
+					p, r, f = np.nan, np.nan, np.nan
 				
 				test.loc[test['Local Time'] == row['Local Time'], 'precision'] = p
 				test.loc[test['Local Time'] == row['Local Time'], 'recall'] = r
