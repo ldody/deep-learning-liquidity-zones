@@ -135,7 +135,6 @@ class PivotPoints():
 				for a in A
 			])
 			
-			print(interval_covered)
 			FN = np.sum(~interval_covered)       # Intervalles sans valeur détectée
 
 			# Calcul des métriques
