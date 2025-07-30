@@ -466,6 +466,7 @@ if __name__ == "__main__":
 	reg = regression(args.job_id)
 
 	if args.slurm_array:
+		print('launch array')
 		reg.array_process()
 		
 	elif args.combined:
@@ -473,4 +474,5 @@ if __name__ == "__main__":
 		reg.combined_data_process()
 	
 	elif args.bayesian_opti:
+		print('launch opti')
 		reg.optimization()
