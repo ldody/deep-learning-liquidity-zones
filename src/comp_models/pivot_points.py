@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import argparse
 from joblib import Parallel, delayed
+from fastparquet import write
 
 
 warnings.simplefilter(action='ignore', category=Warning)
@@ -113,31 +114,53 @@ class PivotPoints():
 			
 			return df
 		
+		def compute_metrics(A, B):
+			# A : (n_intervalles, 2)
+			# B : (n_valeurs,)
+			B = B.dropna()
+			B = B.to_numpy()
+			
+			# Pour chaque valeur de B, vérifier si elle est dans AU MOINS un intervalle de A
+			is_in_interval = np.array([
+				np.any((b >= A[:, 0]) & (b <= A[:, 1]))
+				for b in B
+			])
+			
+			TP = np.sum(is_in_interval)          # B bien prédit (dans un intervalle)
+			FP = len(B) - TP #np.sum(~is_in_interval)         # B prédit mais pas dans un intervalle
+			
+			# Pour chaque intervalle de A, vérifier s'il contient AU MOINS une valeur de B
+			interval_covered = np.array([
+				np.any((B >= a[0]) & (B <= a[1]))
+				for a in A
+			])
+			
+			FN = np.sum(~interval_covered)       # Intervalles sans valeur détectée
+
+			# Calcul des métriques
+			precision = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+			recall = TP / (TP + FN) if (TP + FN) > 0 else 0.0
+			f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+
+			return precision, recall, f1
+		
 		def launch():
 			test = self.df_ohlcv.copy()
-			test['Accuracy'] = 0.0
+			test['precision'] = 0
+			test['recall'] = 0
+			test['F1'] = 0
 
 			for i, row in test.iterrows():
-				tmp = self.df_data.loc[self.df_data['index'] == row['Local Time']]
-				a = 0
-				d = 0
-				ls_clust = []
-				for p in ['Pivot','R1','S1','R2','S2','R3','S3']:
-
-					for j, rowdata in tmp.iterrows():
-
-						if (row[p] > rowdata['price_min']) & (row[p] < rowdata['price_max']):
-							a += 1
-							d += min(abs(row[p] - rowdata['price_min']), abs(row[p] - rowdata['price_max']))
-							ls_clust.append(j)
+				tmp = self.df_data.loc[self.df_data['index'] == row['Local Time'], ['price_min','price_max']].to_numpy()
 				
-				a = len(set(ls_clust))
-				r = min(7, len(tmp))
-
-				test.loc[test['Local Time'] == row['Local Time'], 'Accuracy'] = a/r if r != 0 else np.nan
-				test.loc[test['Local Time'] == row['Local Time'], 'MAE'] = (d/a)/self.to_process['Tick_step'] if a != 0 else np.nan
+				p, r, f = compute_metrics(tmp, row[['Pivot','R1','S1','R2','S2','R3','S3']].T)
+				
+				test.loc[test['Local Time'] == row['Local Time'], 'precision'] = p
+				test.loc[test['Local Time'] == row['Local Time'], 'recall'] = r
+				test.loc[test['Local Time'] == row['Local Time'], 'F1'] = f
 				
 			return test
+		
 		
 		for w in [1, 3, 5, 10, 15, 30]:
 			self.df_ohlcv = pivots(self.df_ohlcv, w)
@@ -158,8 +181,11 @@ class PivotPoints():
 		
 		results = Parallel(n_jobs=-1)(delayed(self.func_pivots)(row) for _, row in self.df_assets.iterrows())
 		
-		pd.concat(results).to_csv(os.path.join(self.results_path, 'PivotPoints.csv'))
-		print(pd.concat(results))
+		results = pd.concat(results)
+		
+		write(os.path.join(self.results_path, 'PivotPoints.parquet.gzip')), results, compression='GZIP', append=False)
+		
+		print(results)
 
 		
 #convert str to bool for argparse
