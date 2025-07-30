@@ -183,7 +183,7 @@ class PivotPoints():
 		
 		results = pd.concat(results)
 		
-		write(os.path.join(self.results_path, 'PivotPoints.parquet.gzip')), results, compression='GZIP', append=False)
+		write(os.path.join(self.results_path, 'PivotPoints.parquet.gzip'), results, compression='GZIP', append=False)
 		
 		print(results)
 
