@@ -472,7 +472,6 @@ class regression(Base):
 			y_trues.append(y_batch)
 
 		# Concatène
-		import tensorflow as tf
 		y_preds = tf.concat(y_preds, axis=0)
 		y_trues = tf.concat(y_trues, axis=0)
 
