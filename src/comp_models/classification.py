@@ -15,7 +15,7 @@ from sklearn.multioutput import MultiOutputClassifier
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models'))
 from regression_preprocessing import RegressionPreprocess as rprepro
 
 
