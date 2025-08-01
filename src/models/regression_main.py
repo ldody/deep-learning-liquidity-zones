@@ -462,28 +462,9 @@ class regression(Base):
 		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 		model.load_weights(os.path.join(self.path_model, 'last_checkpoint.keras'))
 		
-		# Prédiction manuelle
-		y_preds = []
-		y_trues = []
-
-		for x_batch, y_batch in test_dataset:
-			y_pred = model.predict(x_batch)
-			y_preds.append(y_pred)
-			y_trues.append(y_batch)
-
-		# Concatène
-		y_preds = tf.concat(y_preds, axis=0)
-		y_trues = tf.concat(y_trues, axis=0)
-
-		# Réutilise la métrique importée
-		precision = self.prepro.precision_surface_metric(y_trues, y_preds)
-		recall = self.prepro.recall_surface_metric(y_trues, y_preds)
-		f1 = self.prepro.F1_score(y_trues, y_preds)
+		res = model.evaluate(test_dataset, return_dict=True)
 		
-		pd.DataFrame({'precision':[precision],
-					  'recall':[recall],
-					  'f1':[f1]},
-					  ).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
+		pd.DataFrame(res).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
 		
 
 class LimitTrainingTime(tf.keras.callbacks.Callback):
