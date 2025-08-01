@@ -57,6 +57,7 @@ class regression(Base):
 		self.processed_path_LOB = os.path.join(self.processed_path,'LOB')
 		self.processed_path_FO = os.path.join(self.processed_path,'FO')
 		self.results_path = os.path.join(self.root_path,'results','clustering')
+		self.results_path_comp = os.path.join(self.root_path,'results','comp_models')
 		self.results_path_LOB = os.path.join(self.root_path,'results','clustering_evaluation')
 		self.results_path_FO = os.path.join(self.results_path,'FO')
 		self.LOB = None
@@ -437,6 +438,48 @@ class regression(Base):
 		study.optimize(objective, n_trials=1, timeout=43200)
 		print(study.best_trial)
 
+	def prediction(self):
+		"""
+		Prediction on the test dataset.
+		"""
+		self.get_files()
+		
+		with open(os.path.join(self.path_model, 'prepro.json'), 'rb') as file:
+			arrays_dict = pickle.load(file)
+			
+		dict_params = optuna.load_study(storage=storage, study_name=STUDY_NAME).best_params
+		
+		test_dataset = tf.data.Dataset.from_tensor_slices((arrays_dict['x_test'], {"bounds": arrays_dict['y_test'][:,:,:2]}))
+		test_dataset = test_dataset.batch(dict_params['batch_size']).prefetch(tf.data.AUTOTUNE)
+		
+		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
+		model.load_weights(os.path.join(self.path_model, 'last_checkpoint.keras'))
+		
+		# Prédiction manuelle
+		y_preds = []
+		y_trues = []
+
+		for x_batch, y_batch in test_dataset:
+			y_pred = model.predict(x_batch)
+			y_preds.append(y_pred)
+			y_trues.append(y_batch)
+
+		# Concatène
+		import tensorflow as tf
+		y_preds = tf.concat(y_preds, axis=0)
+		y_trues = tf.concat(y_trues, axis=0)
+
+		# Réutilise la métrique importée
+		precision = self.prepro.precision_surface_metric(y_trues, y_preds)
+		recall = self.prepro.recall_surface_metric(y_trues, y_preds)
+		f1 = self.prepro.F1_score(y_trues, y_preds)
+		
+		pd.DataFrame({'precision':[precision],
+					  'recall':[recall],
+					  'f1':[f1]},
+					  ).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
+		
+
 class LimitTrainingTime(tf.keras.callbacks.Callback):
 	def __init__(self, max_time_s):
 		super().__init__()
@@ -469,6 +512,7 @@ if __name__ == "__main__":
 	parser.add_argument('--slurm_array', '-sa', type=str2bool, default=False)
 	parser.add_argument('--combined', '-cmb', type=str2bool, default=False)
 	parser.add_argument('--bayesian_opti', '-ba', type=str2bool, default=False)
+	parser.add_argument('--pred', '-p', type=str2bool, default=False)
 	args = parser.parse_args()
 	
 	reg = regression(args.job_id)
@@ -484,3 +528,7 @@ if __name__ == "__main__":
 	elif args.bayesian_opti:
 		print('launch opti')
 		reg.optimization()
+		
+	elif args.pred:
+		print('launch opti')
+		reg.prediction()
