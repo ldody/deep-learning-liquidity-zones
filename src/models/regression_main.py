@@ -464,7 +464,9 @@ class regression(Base):
 		
 		res = model.evaluate(test_dataset, return_dict=True)
 		
-		pd.DataFrame(res).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
+		print(res)
+		
+		pd.DataFrame([res]).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
 		
 
 class LimitTrainingTime(tf.keras.callbacks.Callback):
