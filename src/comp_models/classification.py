@@ -177,8 +177,8 @@ class PivotPoints():
 		"""
 		self.get_files()
 		
-		dict_model = {'reg':self.func_reg(),
-					  'svc':self.SVC()}
+		dict_model = {'reg':self.func_reg,
+					  'svc':self.func_svc}
 		
 		for i in dict_model:
 			results = Parallel(n_jobs=-1)(delayed(dict_model[i])(row) for _, row in self.df_assets.iterrows())
