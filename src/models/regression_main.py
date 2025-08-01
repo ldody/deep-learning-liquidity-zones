@@ -444,6 +444,13 @@ class regression(Base):
 		"""
 		self.get_files()
 		
+		optuna.logging.get_logger("optuna").addHandler(logging.StreamHandler(sys.stdout))
+		STUDY_NAME = 'optuna_study'
+		DB_PATH = os.path.join(self.path_model, 'ann_optimization.log')
+		storage = optuna.storages.JournalStorage(
+			optuna.storages.journal.JournalFileBackend(DB_PATH),
+		)
+		
 		with open(os.path.join(self.path_model, 'prepro.json'), 'rb') as file:
 			arrays_dict = pickle.load(file)
 			
