@@ -16,6 +16,8 @@ warnings.simplefilter(action='ignore', category=Warning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models'))
+print(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models'))
+print(os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models')))
 from regression_preprocessing import RegressionPreprocess as rprepro
 
 
