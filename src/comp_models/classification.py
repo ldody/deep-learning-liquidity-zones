@@ -185,7 +185,7 @@ class PivotPoints():
 			
 			results = pd.concat(results)
 			
-			results.to_csv(f'{i}.csv')
+			results.to_csv(os.path.join(self.results_path, f'{i}.csv'))
 			
 			print(results)
 	
