@@ -537,5 +537,5 @@ if __name__ == "__main__":
 		reg.optimization()
 		
 	elif args.pred:
-		print('launch opti')
+		print('launch prediction')
 		reg.prediction()
