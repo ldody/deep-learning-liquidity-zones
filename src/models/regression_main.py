@@ -473,29 +473,38 @@ class regression(Base):
 		
 		#print(res)
 		
+		scalers = arrays_dict["scaler_p"]
+		pd.DataFrame(scalers).to_csv(os.path.join(self.results_path_comp, 'scaler.csv'))
+		data_scaled = arrays_dict["y_test"][:,:,:2]
+
+		n_samples, t_len, n_features = data_scaled.shape  # 100, 10, 2
+
+		data_inverse = np.empty_like(data_scaled)
+
+		for i in range(n_samples):
+			x_scaled = data_scaled[i].reshape(-1, n_features)
+			x_inv = scalers[i].inverse_transform(x_scaled)
+			data_inverse[i] = x_inv.reshape(t_len, n_features)
+		
+		data_flat = data_inverse.reshape(-1, 2)
+		pd.DataFrame(data_flat).to_csv(os.path.join(self.results_path_comp, 'y_test.csv'))
+		
+		
 		y_pred = model.predict(test_dataset)
+		
+		data_scaled = y_pred["bounds"]
+		
+		n_samples, t_len, n_features = data_scaled.shape  # 100, 10, 2
 
-		# Extract bounds array from dict
-		bounds = y_pred["bounds"]
-
-		N, num_subpreds, _ = bounds.shape
-
-		rows = []
-
-		for pred_id in range(N):
-			for subpred_id in range(num_subpreds):
-				b1, b2 = bounds[pred_id, subpred_id]   # ✅ FIXED HERE
-				rows.append([pred_id, subpred_id, b1, b2])
-
-		df = pd.DataFrame(
-			rows,
-			columns=["pred_id", "subpred_id", "bound_1", "bound_2"]
-		)
-
-		df.to_csv(
-			os.path.join(self.results_path_comp, "y_pred.csv"),
-			index=False   # ✅ prevent useless index column
-		)
+		data_inverse = np.empty_like(data_scaled)
+		
+		for i in range(n_samples):
+			x_scaled = data_scaled[i].reshape(-1, n_features)
+			x_inv = scalers[i].inverse_transform(x_scaled)
+			data_inverse[i] = x_inv.reshape(t_len, n_features)
+		
+		data_flat = data_inverse.reshape(-1, 2)
+		pd.DataFrame(data_flat).to_csv(os.path.join(self.results_path_comp, 'y_pred.csv'))
 		
 		#pd.DataFrame([res]).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
 		
