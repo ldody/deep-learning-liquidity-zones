@@ -467,7 +467,25 @@ class regression(Base):
 		#print(res)
 		
 		y_pred = model.predict(test_dataset)
-		pd.DataFrame([y_pred]).to_csv(os.path.join(self.results_path_comp, 'y_pred.csv'))
+		
+		N, num_subpreds, _ = y_pred.shape
+
+		rows = []
+
+		for pred_id in range(N):
+			for subpred_id in range(num_subpreds):
+				b1, b2 = preds[pred_id, subpred_id]
+				rows.append([pred_id, subpred_id, b1, b2])
+
+		df = pd.DataFrame(
+			rows,
+			columns=["pred_id", "subpred_id", "bound_1", "bound_2"]
+		)
+		
+		df.to_csv(os.path.join(self.results_path_comp, 'y_pred.csv'))
+		
+		pd.DataFrame(arrays_dict['y_test'][:,:,:2]).to_csv(os.path.join(self.results_path_comp, 'y_test.csv'))
+		pd.DataFrame(arrays_dict['scaler_p']).to_csv(os.path.join(self.results_path_comp, 'scaler.csv'))
 		
 		#pd.DataFrame([res]).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
 		
