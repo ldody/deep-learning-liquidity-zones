@@ -468,7 +468,7 @@ class regression(Base):
 		
 		y_pred = model.predict(test_dataset)
 		
-		N, num_subpreds, _ = y_pred.shape
+		N, num_subpreds, _ = y_pred['bounds'].shape
 
 		rows = []
 
