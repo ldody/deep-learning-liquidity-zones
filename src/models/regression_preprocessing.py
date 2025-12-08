@@ -74,13 +74,13 @@ class RegressionPreprocess(Base):
 		df_ohlcv['Close'] = df_ohlcv['Close'].ffill()
 		df_ohlcv = df_ohlcv.bfill(axis=1)
 		
-		ohlcv, data, n_interval = self.prepare_sequences(df_ohlcv, df_data)
+		ohlcv, data, n_interval, dates = self.prepare_sequences(df_ohlcv, df_data)
 		
 		scaled_ohlcv, scaled_data, ls_scaler_p, ls_scaler_v, scaler_r, scaler_nb = self.scaling(ohlcv, data)
 		
 		n_interval = scaler_nb.transform(n_interval.reshape(-1, 1))
 		
-		return scaled_data, scaled_ohlcv, n_interval, ls_scaler_p, ls_scaler_v, scaler_r, scaler_nb
+		return scaled_data, scaled_ohlcv, n_interval, ls_scaler_p, ls_scaler_v, scaler_r, scaler_nb, dates
 		
 
 	def prepare_sequences(self, df_ohlcv, df_data, window_size: int=100):
@@ -97,12 +97,16 @@ class RegressionPreprocess(Base):
 		sequences_data = []
 		sequences_n_interval = []
 		index_todelete = []
+		index_tokeep = []
 		
 		for i, t in enumerate([date[-1,0] for date in sequences_ohlcv]):
 			
 			if len(df_data[df_data['index'] == t]) == 0:
 				index_todelete.append(i)
 				continue
+			
+			else: 
+				index_tokeep.append(i)
 
 			sequences_data.append(df_data[df_data['index'] == t].to_numpy())
 			sequences_n_interval.append(float(df_data.loc[df_data['index'] == t, 'rank_size'].max()))
@@ -118,7 +122,7 @@ class RegressionPreprocess(Base):
 			
 		sequences_n_interval = np.array(sequences_n_interval)
 		
-		return sequences_ohlcv, sequences_data, sequences_n_interval
+		return sequences_ohlcv, sequences_data, sequences_n_interval, index_tokeep
 		
 	def scaling(self, ohlcv, data):
 		'''
