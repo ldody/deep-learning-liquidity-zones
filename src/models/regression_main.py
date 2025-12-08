@@ -466,7 +466,7 @@ class regression(Base):
 		
 		#print(res)
 		
-		pd.DataFrame(arrays_dict['y_test'][:,:,:2]).to_csv(os.path.join(self.results_path_comp, 'y_test.csv'))
+		pd.DataFrame(arrays_dict['y_test'][:,:,:2].reshape(-1, 2)).to_csv(os.path.join(self.results_path_comp, 'y_test.csv'))
 		pd.DataFrame(arrays_dict['scaler_p']).to_csv(os.path.join(self.results_path_comp, 'scaler.csv'))
 		
 		y_pred = model.predict(test_dataset)
