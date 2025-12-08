@@ -474,6 +474,8 @@ class regression(Base):
 		#print(res)
 		
 		scalers = arrays_dict["scaler_p"]
+		pd.DataFrame(arrays_dict["asset"]).to_csv(os.path.join(self.results_path_comp, 'asset.csv'))
+		pd.DataFrame(arrays_dict["dates"]).to_csv(os.path.join(self.results_path_comp, 'dates.csv'))
 		pd.DataFrame(scalers).to_csv(os.path.join(self.results_path_comp, 'scaler.csv'))
 		data_scaled = arrays_dict["y_test"][:,:,:2]
 
