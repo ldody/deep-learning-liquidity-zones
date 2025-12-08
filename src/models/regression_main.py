@@ -466,6 +466,9 @@ class regression(Base):
 		
 		print(res)
 		
+		y_pred = model.predict(test_dataset)
+		pd.DataFrame([y_pred]).to_csv(os.path.join(self.results_path_comp, 'y_pred.csv'))
+		
 		pd.DataFrame([res]).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
 		
 
