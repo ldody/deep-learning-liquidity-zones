@@ -462,14 +462,14 @@ class regression(Base):
 		model = ANNmodel().model_build(input_shape = arrays_dict['x_train'].shape[1:], timesteps = self.prepro.n_pred, **dict_params)
 		model.load_weights(os.path.join(self.path_model, 'last_checkpoint.keras'))
 		
-		res = model.evaluate(test_dataset, return_dict=True)
+		#res = model.evaluate(test_dataset, return_dict=True)
 		
-		print(res)
+		#print(res)
 		
 		y_pred = model.predict(test_dataset)
 		pd.DataFrame([y_pred]).to_csv(os.path.join(self.results_path_comp, 'y_pred.csv'))
 		
-		pd.DataFrame([res]).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
+		#pd.DataFrame([res]).to_csv(os.path.join(self.results_path_comp, 'metrics.csv'))
 		
 
 class LimitTrainingTime(tf.keras.callbacks.Callback):
