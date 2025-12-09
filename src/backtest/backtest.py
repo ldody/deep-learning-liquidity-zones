@@ -96,6 +96,7 @@ class ohlcv_bid_ask(Base):
 				
 		self.df_data = self.df_data.reset_index().groupby(['index','side'], as_index=False).apply(attrib)
 		self.df_data = self.df_data.reset_index(drop=True)
+		print(self.df_data)
 		self.df_data = self.df_data.groupby(['index','side']).last()
 		self.df_data = self.df_data.unstack(level=1)
 		print(self.df_data)
