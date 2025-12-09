@@ -8,6 +8,12 @@ import argparse
 import pickle
 import time
 from joblib import Parallel, delayed
+from filelock import FileLock
+
+# Global file paths for pooled per-timestamp metrics
+GLOBAL_METRICS_FILE = "global_execution_metrics.csv"
+GLOBAL_LOCK_FILE = "global_execution_metrics.lock"
+
 
 warnings.simplefilter(action='ignore', category=Warning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -425,20 +431,68 @@ def run_for_asset(asset_row, horizon_steps: int):
 	"""
 	Run the full H4 backtest for a single asset and a given horizon.
 
-	Returns a tidy summary with columns:
-	["asset", "side", "strategy", "horizon_steps",
-	 "Mean slippage", "Adverse selection prob."]
+	- Instantiates a new ohlcv_bid_ask() object
+	- Loads data for this asset
+	- Runs the backtest (buy & sell, with all 4 strategies)
+	- Appends per-timestamp metrics to a single global CSV (with FileLock)
+	- Returns a tidy summary dataframe:
+		["asset", "side", "strategy", "horizon",
+		 "Mean slippage", "Adverse selection prob."]
 	"""
 	bt = ohlcv_bid_ask()
 	bt.to_process = asset_row
 
-	# set the horizon for this run
+	# Set the horizon for this run
 	bt.horizon_steps = horizon_steps
 
+	# Load data & run backtest
 	bt.load_data()
 	bt.run_backtest_current_asset()
 
 	asset_ric = asset_row["RIC"]
+
+	# ============================================================
+	# SAVE PER-TIMESTAMP METRICS TO *SINGLE* GLOBAL FILE (SAFE)
+	# ============================================================
+	rows = []
+
+	# BUY side detailed metrics
+	if hasattr(bt, "metrics_buy") and bt.metrics_buy is not None and not bt.metrics_buy.empty:
+		dfb = bt.metrics_buy.copy()
+		dfb["asset"] = asset_ric
+		dfb["side"] = "buy"
+		dfb["horizon"] = horizon_steps
+		rows.append(dfb)
+
+	# SELL side detailed metrics
+	if hasattr(bt, "metrics_sell") and bt.metrics_sell is not None and not bt.metrics_sell.empty:
+		dfs = bt.metrics_sell.copy()
+		dfs["asset"] = asset_ric
+		dfs["side"] = "sell"
+		dfs["horizon"] = horizon_steps
+		rows.append(dfs)
+
+	if rows:
+		df_all = pd.concat(rows, axis=0)
+
+		# Use a file lock to safely append from multiple processes
+		lock = FileLock(GLOBAL_LOCK_FILE)
+		with lock:
+			# Decide whether to write header (only if file does not exist or is empty)
+			file_exists = os.path.exists(GLOBAL_METRICS_FILE)
+			write_header = not file_exists or os.path.getsize(GLOBAL_METRICS_FILE) == 0
+
+			df_all.to_csv(
+				GLOBAL_METRICS_FILE,
+				mode="a",              # append
+				header=write_header,   # header only once
+				index=True             # keep timestamp index as a column
+			)
+
+	# ============================================================
+	# BUILD AND RETURN SUMMARY (PER-ASSET / SIDE / STRATEGY)
+	# ============================================================
+
 	out = []
 
 	# BUY side summary
@@ -447,7 +501,7 @@ def run_for_asset(asset_row, horizon_steps: int):
 		tmp["asset"] = asset_ric
 		tmp["side"] = "buy"
 		tmp["strategy"] = tmp.index
-		tmp["horizon_steps"] = horizon_steps
+		tmp["horizon"] = horizon_steps
 		out.append(tmp.reset_index(drop=True))
 
 	# SELL side summary
@@ -456,7 +510,7 @@ def run_for_asset(asset_row, horizon_steps: int):
 		tmp["asset"] = asset_ric
 		tmp["side"] = "sell"
 		tmp["strategy"] = tmp.index
-		tmp["horizon_steps"] = horizon_steps
+		tmp["horizon"] = horizon_steps
 		out.append(tmp.reset_index(drop=True))
 
 	if out:
@@ -464,10 +518,11 @@ def run_for_asset(asset_row, horizon_steps: int):
 	else:
 		return pd.DataFrame(
 			columns=[
-				"asset", "side", "strategy", "horizon_steps",
+				"asset", "side", "strategy", "horizon",
 				"Mean slippage", "Adverse selection prob."
 			]
 		)
+
 
 
 
