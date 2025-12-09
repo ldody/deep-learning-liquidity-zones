@@ -111,7 +111,9 @@ class ohlcv_bid_ask(Base):
 		self.merged_df["mid"] = (self.merged_df["bid"] + self.merged_df["ask"]) / 2.0
 		
 	def main(self):
-		
+		"""
+		Launch BT.
+		"""
 		self.get_files()
 		
 		for i in range(len(self.to_process)):
