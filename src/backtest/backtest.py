@@ -11,8 +11,8 @@ from joblib import Parallel, delayed
 from filelock import FileLock
 
 # Global file paths for pooled per-timestamp metrics
-GLOBAL_METRICS_FILE = "global_execution_metrics.csv"
-GLOBAL_LOCK_FILE = "global_execution_metrics.lock"
+GLOBAL_METRICS_NAME = "global_execution_metrics.csv"
+GLOBAL_LOCK_NAME = "global_execution_metrics.lock"
 
 
 warnings.simplefilter(action='ignore', category=Warning)
@@ -472,22 +472,32 @@ def run_for_asset(asset_row, horizon_steps: int):
 		dfs["horizon"] = horizon_steps
 		rows.append(dfs)
 
+	# Build full paths for global metrics in the SAME folder as other results
+	global_file = os.path.join(bt.results_path, GLOBAL_METRICS_NAME)
+	lock_file = os.path.join(bt.results_path, GLOBAL_LOCK_NAME)
+
 	if rows:
 		df_all = pd.concat(rows, axis=0)
 
+		# Ensure results directory exists
+		os.makedirs(bt.results_path, exist_ok=True)
+
 		# Use a file lock to safely append from multiple processes
-		lock = FileLock(GLOBAL_LOCK_FILE)
+		lock = FileLock(lock_file)
 		with lock:
-			# Decide whether to write header (only if file does not exist or is empty)
-			file_exists = os.path.exists(GLOBAL_METRICS_FILE)
-			write_header = not file_exists or os.path.getsize(GLOBAL_METRICS_FILE) == 0
+			file_exists = os.path.exists(global_file)
+			write_header = not file_exists or os.path.getsize(global_file) == 0
 
 			df_all.to_csv(
-				GLOBAL_METRICS_FILE,
+				global_file,
 				mode="a",              # append
 				header=write_header,   # header only once
 				index=True             # keep timestamp index as a column
 			)
+
+		print(f"[INFO] Appended {len(df_all)} rows to {global_file} for {asset_ric}, H={horizon_steps}")
+	else:
+		print(f"[INFO] No trades generated for {asset_ric}, H={horizon_steps} (no rows to save)")
 
 	# ============================================================
 	# BUILD AND RETURN SUMMARY (PER-ASSET / SIDE / STRATEGY)
@@ -522,8 +532,6 @@ def run_for_asset(asset_row, horizon_steps: int):
 				"Mean slippage", "Adverse selection prob."
 			]
 		)
-
-
 
 
 if __name__ == "__main__":
