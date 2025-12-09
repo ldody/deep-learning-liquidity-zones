@@ -202,7 +202,7 @@ class regression(Base):
 			x_train, x_test, y_train, y_test = train_test_split(ohlcv, data, test_size=0.3, shuffle=False)
 			_, _, n_train, n_test = train_test_split(ohlcv, n_interval, test_size=0.3, shuffle=False)
 			
-			_, _, dates, scaler_p = train_test_split(dates, scaler_p, test_size=0.3, shuffle=False)
+			_, dates, _, scaler_p = train_test_split(dates, scaler_p, test_size=0.3, shuffle=False)
 			
 			with lock:
 				for key in dict(arrays_dict):
