@@ -198,8 +198,7 @@ class ohlcv_bid_ask(Base):
 	# ------------------------------------------------------------------
 	# FILTER ZONES PER SIDE
 	# ------------------------------------------------------------------
-	@staticmethod
-	def _filter_zones_for_side(zones, decision_mid, side: str):
+	def _filter_zones_for_side(self, zones, decision_mid, side: str):
 		"""
 		For BUY: keep zones at/above mid.
 		For SELL: keep zones at/below mid.
@@ -286,8 +285,7 @@ class ohlcv_bid_ask(Base):
 	# ------------------------------------------------------------------
 	# METRICS
 	# ------------------------------------------------------------------
-	@staticmethod
-	def _compute_metrics(results: pd.DataFrame, side: str = "buy") -> pd.DataFrame:
+	def _compute_metrics(self, results: pd.DataFrame, side: str = "buy") -> pd.DataFrame:
 		"""
 		Add slippage & adverse selection columns to results for given side.
 
@@ -309,8 +307,7 @@ class ohlcv_bid_ask(Base):
 				out[f"adv_{col}"] = out["final_mid"] > out[col]
 		return out
 
-	@staticmethod
-	def _summarize(results: pd.DataFrame) -> pd.DataFrame:
+	def _summarize(self, results: pd.DataFrame) -> pd.DataFrame:
 		"""
 		Summary table: mean slippage & adverse selection probability.
 		"""
