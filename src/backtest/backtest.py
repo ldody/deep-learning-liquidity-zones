@@ -98,6 +98,7 @@ class ohlcv_bid_ask(Base):
 		self.df_data = self.df_data.reset_index(drop=True)
 		self.df_data = self.df_data.groupby(['index','side']).last()
 		self.df_data = self.df_data.unstack(level=1)
+		print(self.df_data)
 		self.df_data.columns = [f"{lvl0}_{lvl1}" for (lvl0, lvl1) in self.df_data.columns]
 		self.df_data = self.df_data.rename(columns={
 			"price_Buy": "bid",
