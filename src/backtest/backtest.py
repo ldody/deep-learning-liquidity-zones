@@ -117,7 +117,7 @@ class ohlcv_bid_ask(Base):
 		"""
 		self.get_files()
 		
-		for i in range(len(self.to_process)):
+		for i in range(len(self.df_assets)):
 			self.to_process = self.df_assets.loc[i]
 			print(self.to_process)
 			self.load_data()
