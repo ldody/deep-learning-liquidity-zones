@@ -42,7 +42,7 @@ class ohlcv_bid_ask(Base):
 		self.ohlcv_path = os.path.join(self.data_path,'raw','OHLCV')
 		self.processed_path = os.path.join(self.data_path,'processed','FOB')
 		self.processed_path_LOB = os.path.join(self.processed_path,'LOB')
-		self.results_path = os.path.join(self.root_path,'results','clustering')
+		self.results_path = os.path.join(self.root_path,'results','comp_models')
 		self.df_assets = pd.read_csv(os.path.join(self.data_path, 'assets.csv'), index_col=0)#[['ISIN','RIC']]
 		self.files_input = pd.DataFrame(columns=['ISIN','data'])
 		self.files = {}
@@ -105,11 +105,28 @@ class ohlcv_bid_ask(Base):
 			"size_Buy": "bid_size",
 			"size_Sell": "ask_size",
 		})
-		
-		print(self.df_ohlcv, self.df_data)
-		
+				
 		self.merged_df = self.df_ohlcv.join(self.df_data, how="inner").sort_index()
 		self.merged_df["mid"] = (self.merged_df["bid"] + self.merged_df["ask"]) / 2.0
+		
+		y_pred = pd.read_csv(os.path.join(self.results_path, 'y_pred.csv'), index_col=0)
+		y_pred.columns = ['lower_bound','upper_bound']
+		
+		dates = pd.read_csv(os.path.join(self.results_path, 'dates.csv'), index_col=0)
+		asset = pd.read_csv(os.path.join(self.results_path, 'asset.csv'), index_col=0).applymap(lambda x: os.path.basename(os.path.normpath(x)).split('.')[0])
+		asset.columns = ['asset']
+		dates.columns = ['timestamp']
+		dates['timestamp'] = pd.to_datetime(dates['timestamp'])
+
+		dates['entity'] = (dates['timestamp'].diff() < pd.Timedelta(0)).fillna(True).cumsum()
+
+		asset['entity'] = asset.index
+		dates = dates.merge(asset[['entity', 'asset']], on='entity', how='left')
+
+		dates = dates.loc[dates.index.repeat(10)].reset_index(drop=True)
+		
+		self.bounds = dates.join(y_pred, how='inner')
+		self.bounds = self.bounds.drop(columns=['entity'], axis=1)
 		
 	def main(self):
 		"""
@@ -121,7 +138,7 @@ class ohlcv_bid_ask(Base):
 			self.to_process = self.df_assets.loc[i]
 			print(self.to_process)
 			self.load_data()
-			print(self.merged_df)
+			print(self.merged_df, self.bounds)
 			break
 			
 
