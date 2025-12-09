@@ -46,6 +46,12 @@ class ohlcv_bid_ask(Base):
 		self.df_assets = pd.read_csv(os.path.join(self.data_path, 'assets.csv'), index_col=0)#[['ISIN','RIC']]
 		self.files_input = pd.DataFrame(columns=['ISIN','data'])
 		self.files = {}
+		
+		# --- Backtest hyperparameters ---
+		self.horizon_steps = 50           # e.g. 3 * 5min; adapt if needed
+		self.min_zone_width_ticks = 2    # discard zones narrower than 2 ticks
+		self.widen_factor_spread = 0.5   # widen zones by 0.5 * spread on each side
+		self.rng = np.random.default_rng(42)
 
 	def get_files(self):
 		"""
@@ -128,6 +134,238 @@ class ohlcv_bid_ask(Base):
 		self.bounds = dates.join(y_pred, how='inner')
 		self.bounds = self.bounds.drop(columns=['entity'], axis=1)
 		
+	# ------------------------------------------------------------------
+	# ZONES FROM PREDICTIONS
+	# ------------------------------------------------------------------
+	def _build_zones_by_time_for_current_asset(self):
+		"""
+		Build a dict mapping each timestamp -> list of (low, high) zones
+		for the asset currently in self.to_process.
+
+		Uses:
+			- self.merged_df  (has bid, ask, mid)
+			- self.bounds     (has timestamp, asset, lower_bound, upper_bound)
+			- self.to_process['Tick_step'] as tick size
+		"""
+		tick_size = float(self.to_process['Tick_step'])
+		min_width = self.min_zone_width_ticks * tick_size
+
+		# infer asset name used in self.bounds["asset"]
+		# Here I assume asset column matches RIC root or your model asset label.
+		# Adjust this mapping if needed:
+		ric = self.to_process['RIC']
+		asset_name = ric.split('.')[0]  # e.g. "SAF.PA" -> "SAF" if your asset.csv uses that
+
+		bounds_asset = self.bounds[self.bounds['asset'] == asset_name].copy()
+		if bounds_asset.empty:
+			print(f"[WARN] No predicted bounds found for asset {asset_name}")
+			self.zones_by_time = {}
+			return
+
+		zones_by_time = {}
+
+		# group by timestamp and build zones
+		for t, grp in bounds_asset.groupby('timestamp'):
+			t = pd.to_datetime(t)
+			if t not in self.merged_df.index:
+				continue
+
+			spread = float(self.merged_df.loc[t, "ask"] - self.merged_df.loc[t, "bid"])
+			zones = []
+
+			for _, row in grp.iterrows():
+				low = float(min(row["lower_bound"], row["upper_bound"]))
+				high = float(max(row["lower_bound"], row["upper_bound"]))
+				width = high - low
+
+				# discard micro-zones
+				if width < min_width:
+					continue
+
+				# widen a bit based on spread
+				if spread > 0 and self.widen_factor_spread > 0:
+					buffer_ = self.widen_factor_spread * spread
+					low -= buffer_
+					high += buffer_
+
+				zones.append((low, high))
+
+			if zones:
+				zones_by_time[t] = zones
+
+		self.zones_by_time = zones_by_time
+
+	# ------------------------------------------------------------------
+	# FILTER ZONES PER SIDE
+	# ------------------------------------------------------------------
+	@staticmethod
+	def _filter_zones_for_side(zones, decision_mid, side: str):
+		"""
+		For BUY: keep zones at/above mid.
+		For SELL: keep zones at/below mid.
+		"""
+		if side == "buy":
+			return [(low, high) for (low, high) in zones if high >= decision_mid]
+		elif side == "sell":
+			return [(low, high) for (low, high) in zones if low <= decision_mid]
+		else:
+			raise ValueError("side must be 'buy' or 'sell'")
+
+	# ------------------------------------------------------------------
+	# BACKTEST ONE SIDE
+	# ------------------------------------------------------------------
+	def _run_backtest_one_side(self, side: str = "buy") -> pd.DataFrame:
+		"""
+		Run liquidity-aware execution backtest for a single side ("buy" or "sell")
+		for the current asset (self.to_process, self.merged_df, self.zones_by_time).
+
+		Returns
+		-------
+		DataFrame with columns:
+			["decision_mid", "exec_immediate", "exec_random", "exec_liq", "final_mid"]
+		indexed by timestamp.
+		"""
+		if not hasattr(self, "zones_by_time"):
+			self._build_zones_by_time_for_current_asset()
+
+		rows = []
+		common_times = sorted(set(self.merged_df.index) & set(self.zones_by_time.keys()))
+
+		for t in common_times:
+			pos = self.merged_df.index.get_loc(t)
+			if pos + self.horizon_steps >= len(self.merged_df.index):
+				continue
+
+			decision_mid = float(self.merged_df.iloc[pos]["mid"])
+			future = self.merged_df.iloc[pos + 1 : pos + 1 + self.horizon_steps].copy()
+			future["mid"] = (future["bid"] + future["ask"]) / 2.0
+
+			zones_all = self.zones_by_time.get(t, [])
+			zones = self._filter_zones_for_side(zones_all, decision_mid, side)
+			if not zones:
+				# No relevant zones for this side at this time → skip
+				continue
+
+			# Strategy 1: Immediate
+			exec_immediate = decision_mid
+
+			# Strategy 2: Random in window
+			rand_idx = self.rng.integers(0, len(future))
+			exec_random = float(future["mid"].iloc[rand_idx])
+
+			# Strategy 3: Liquidity-aware
+			exec_liq = None
+			for _, row in future.iterrows():
+				m = float(row["mid"])
+				hit = any((m >= low) and (m <= high) for (low, high) in zones)
+				if hit:
+					exec_liq = m
+					break
+
+			if exec_liq is None:
+				exec_liq = float(future["mid"].iloc[-1])
+
+			final_mid = float(future["mid"].iloc[-1])
+
+			rows.append({
+				"timestamp": t,
+				"decision_mid": decision_mid,
+				"exec_immediate": exec_immediate,
+				"exec_random": exec_random,
+				"exec_liq": exec_liq,
+				"final_mid": final_mid,
+			})
+
+		if not rows:
+			return pd.DataFrame(columns=[
+				"decision_mid", "exec_immediate", "exec_random", "exec_liq", "final_mid"
+			])
+
+		return pd.DataFrame(rows).set_index("timestamp")
+
+	# ------------------------------------------------------------------
+	# METRICS
+	# ------------------------------------------------------------------
+	@staticmethod
+	def _compute_metrics(results: pd.DataFrame, side: str = "buy") -> pd.DataFrame:
+		"""
+		Add slippage & adverse selection columns to results for given side.
+
+		For buy:
+			slippage = (exec - decision) / decision
+			adverse = final_mid < exec
+
+		For sell:
+			slippage = (decision - exec) / decision
+			adverse = final_mid > exec
+		"""
+		out = results.copy()
+		for col in ["exec_immediate", "exec_random", "exec_liq"]:
+			if side == "buy":
+				out[f"slip_{col}"] = (out[col] - out["decision_mid"]) / out["decision_mid"]
+				out[f"adv_{col}"] = out["final_mid"] < out[col]
+			else:  # sell
+				out[f"slip_{col}"] = (out["decision_mid"] - out[col]) / out["decision_mid"]
+				out[f"adv_{col}"] = out["final_mid"] > out[col]
+		return out
+
+	@staticmethod
+	def _summarize(results: pd.DataFrame) -> pd.DataFrame:
+		"""
+		Summary table: mean slippage & adverse selection probability.
+		"""
+		if results.empty:
+			return pd.DataFrame(
+				{"Mean slippage": [], "Adverse selection prob.": []},
+				index=[]
+			)
+
+		return pd.DataFrame({
+			"Mean slippage": [
+				results["slip_exec_immediate"].mean(),
+				results["slip_exec_random"].mean(),
+				results["slip_exec_liq"].mean(),
+			],
+			"Adverse selection prob.": [
+				results["adv_exec_immediate"].mean(),
+				results["adv_exec_random"].mean(),
+				results["adv_exec_liq"].mean(),
+			],
+		}, index=["Immediate", "Random", "Liquidity-aware"])
+
+	# ------------------------------------------------------------------
+	# PUBLIC: RUN BACKTEST FOR CURRENT ASSET
+	# ------------------------------------------------------------------
+	def run_backtest_current_asset(self):
+		"""
+		Run H4 backtest (buy & sell) for the current asset in self.to_process.
+		Uses self.merged_df and self.bounds built in load_data().
+		"""
+		# Build zones
+		self._build_zones_by_time_for_current_asset()
+
+		# BUY side
+		raw_buy = self._run_backtest_one_side(side="buy")
+		metrics_buy = self._compute_metrics(raw_buy, side="buy")
+		summary_buy = self._summarize(metrics_buy)
+
+		# SELL side
+		raw_sell = self._run_backtest_one_side(side="sell")
+		metrics_sell = self._compute_metrics(raw_sell, side="sell")
+		summary_sell = self._summarize(metrics_sell)
+
+		print("\n=== BUY side summary ===")
+		print(summary_buy)
+		print("\n=== SELL side summary ===")
+		print(summary_sell)
+
+		# Optionally store on self for later saving
+		self.metrics_buy = metrics_buy
+		self.metrics_sell = metrics_sell
+		self.summary_buy = summary_buy
+		self.summary_sell = summary_sell
+
+		
 	def main(self):
 		"""
 		Launch BT.
@@ -138,8 +376,13 @@ class ohlcv_bid_ask(Base):
 			self.to_process = self.df_assets.loc[i]
 			print(self.to_process)
 			self.load_data()
-			print(self.merged_df, self.bounds)
-			break
+			print(self.merged_df.head(), self.bounds.head())
+
+			# Run H4 backtest for this asset
+			self.run_backtest_current_asset()
+
+			break  # remove this if you want to loop over all assets
+
 			
 
 if __name__ == "__main__":
