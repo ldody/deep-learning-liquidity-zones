@@ -119,7 +119,7 @@ class ohlcv_bid_ask():
 		y_pred.columns = ['lower_bound','upper_bound']
 		
 		dates = pd.read_csv(os.path.join(self.results_path, 'dates.csv'), index_col=0)
-		asset = pd.read_csv(os.path.join(self.results_path, 'asset.csv'), index_col=0).applymap(lambda x: os.path.basename(os.path.normpath(x)).split('.')[0])
+		asset = pd.read_csv(os.path.join(self.results_path, 'asset.csv'), index_col=0).map(lambda x: os.path.basename(os.path.normpath(x)).split('.')[0])
 		asset.columns = ['asset']
 		dates.columns = ['timestamp']
 		dates['timestamp'] = pd.to_datetime(dates['timestamp'])
@@ -389,74 +389,86 @@ class ohlcv_bid_ask():
 	
 	def main(self):
 		"""
-		Launch H4 backtest for all assets in parallel with joblib.
+		Launch H4 backtest for all assets and multiple horizons in parallel.
 		"""
-		self.get_files()   # fills self.df_assets etc.
+		self.get_files()
 
-		# Run all assets in parallel
-		summaries_list = Parallel(n_jobs=-1)(
-			delayed(run_for_asset)(row)
-			for _, row in self.df_assets.iterrows()
-		)
+		HORIZONS = [10, 30, 50, 100, 150, 200, 250]   # 10, 30, 50 x 5min = robustness tests
 
-		# Concatenate all per-asset summaries
-		all_summaries = pd.concat(summaries_list, ignore_index=True)
+		all_runs = []
 
-		# Save to disk once
-		out_path = os.path.join(self.results_path, "backtest_summaries_all_assets.csv")
+		for H in HORIZONS:
+			print(f"\n=== Running backtest for horizon_steps = {H} ===")
+
+			summaries_list = Parallel(n_jobs=20)(
+				delayed(run_for_asset)(row, H)
+				for _, row in self.df_assets.iterrows()
+			)
+
+			# Concatenate across assets for this horizon
+			summaries_H = pd.concat(summaries_list, ignore_index=True)
+			all_runs.append(summaries_H)
+
+		# Concatenate all horizons
+		all_summaries = pd.concat(all_runs, ignore_index=True)
+
+		# Save once
+		out_path = os.path.join(self.results_path, "backtest_summaries_all_assets_robust.csv")
 		all_summaries.to_csv(out_path, index=False)
 
-		print("\n=== Global H4 summary saved to ===")
+		print("\n=== Global H4 robustness summary saved to ===")
 		print(out_path)
+
 			
 
-def run_for_asset(asset_row):
+def run_for_asset(asset_row, horizon_steps: int):
 	"""
-	Run the full H4 backtest for a single asset.
+	Run the full H4 backtest for a single asset and a given horizon.
 
-	Parameters
-	----------
-	asset_row : pd.Series
-		One row from df_assets (contains RIC, paths, Tick_step, etc.)
-
-	Returns
-	-------
-	pd.DataFrame
-		Tidy summary with columns:
-		["asset", "side", "strategy", "Mean slippage", "Adverse selection prob."]
+	Returns a tidy summary with columns:
+	["asset", "side", "strategy", "horizon_steps",
+	 "Mean slippage", "Adverse selection prob."]
 	"""
-	bt = ohlcv_bid_ask()          # new instance per process
-	bt.to_process = asset_row     # tell it which asset to use
-	bt.load_data()                # builds merged_df and bounds
+	bt = ohlcv_bid_ask()
+	bt.to_process = asset_row
+
+	# set the horizon for this run
+	bt.horizon_steps = horizon_steps
+
+	bt.load_data()
 	bt.run_backtest_current_asset()
 
 	asset_ric = asset_row["RIC"]
-
 	out = []
 
-	# BUY
+	# BUY side summary
 	if hasattr(bt, "summary_buy") and bt.summary_buy is not None and not bt.summary_buy.empty:
 		tmp = bt.summary_buy.copy()
 		tmp["asset"] = asset_ric
 		tmp["side"] = "buy"
 		tmp["strategy"] = tmp.index
+		tmp["horizon_steps"] = horizon_steps
 		out.append(tmp.reset_index(drop=True))
 
-	# SELL
+	# SELL side summary
 	if hasattr(bt, "summary_sell") and bt.summary_sell is not None and not bt.summary_sell.empty:
 		tmp = bt.summary_sell.copy()
 		tmp["asset"] = asset_ric
 		tmp["side"] = "sell"
 		tmp["strategy"] = tmp.index
+		tmp["horizon_steps"] = horizon_steps
 		out.append(tmp.reset_index(drop=True))
 
 	if out:
 		return pd.concat(out, ignore_index=True)
 	else:
-		# no data (e.g. no zones), return empty frame with correct columns
 		return pd.DataFrame(
-			columns=["asset", "side", "strategy", "Mean slippage", "Adverse selection prob."]
+			columns=[
+				"asset", "side", "strategy", "horizon_steps",
+				"Mean slippage", "Adverse selection prob."
+			]
 		)
+
 
 
 if __name__ == "__main__":
