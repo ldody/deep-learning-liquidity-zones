@@ -85,8 +85,7 @@ class ohlcv_bid_ask(Base):
 		
 		self.df_data = pd.read_parquet(self.to_process['path'])
 		print(self.df_data)
-		self.df_data = self.df_data.set_index('index').between_time('9:00', '17:00').reset_index()
-		self.df_data = self.df_data[self.df_data['err'].isin([0,1])]
+		self.df_data = self.df_data.between_time('9:00', '17:00').reset_index()
 		
 		def attrib(data):
 			if 'Buy' in data['side'].values:
