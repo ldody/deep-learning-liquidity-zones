@@ -121,7 +121,7 @@ class ohlcv_bid_ask(Base):
 			self.to_process = self.df_assets.loc[i]
 			print(self.to_process)
 			self.load_data()
-			print(self.merge)
+			print(self.merged_df)
 			break
 			
 
