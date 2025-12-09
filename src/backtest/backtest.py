@@ -15,7 +15,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from base_log import Base, log_execution
 
-class ohlcv_bid_ask(Base):
+class ohlcv_bid_ask():
 	"""
 	Clustering LOB and FO data.
 
@@ -146,15 +146,14 @@ class ohlcv_bid_ask(Base):
 			- self.merged_df  (has bid, ask, mid)
 			- self.bounds     (has timestamp, asset, lower_bound, upper_bound)
 			- self.to_process['Tick_step'] as tick size
+			- self.min_zone_width_ticks, self.widen_factor_spread
 		"""
 		tick_size = float(self.to_process['Tick_step'])
 		min_width = self.min_zone_width_ticks * tick_size
 
-		# infer asset name used in self.bounds["asset"]
-		# Here I assume asset column matches RIC root or your model asset label.
-		# Adjust this mapping if needed:
 		ric = self.to_process['RIC']
-		asset_name = ric.split('.')[0]  # e.g. "SAF.PA" -> "SAF" if your asset.csv uses that
+		# adjust this line if your 'asset' in bounds is not the RIC root
+		asset_name = ric.split('.')[0]
 
 		bounds_asset = self.bounds[self.bounds['asset'] == asset_name].copy()
 		if bounds_asset.empty:
@@ -164,7 +163,6 @@ class ohlcv_bid_ask(Base):
 
 		zones_by_time = {}
 
-		# group by timestamp and build zones
 		for t, grp in bounds_asset.groupby('timestamp'):
 			t = pd.to_datetime(t)
 			if t not in self.merged_df.index:
@@ -178,11 +176,11 @@ class ohlcv_bid_ask(Base):
 				high = float(max(row["lower_bound"], row["upper_bound"]))
 				width = high - low
 
-				# discard micro-zones
+				# drop micro-zones narrower than min_width
 				if width < min_width:
 					continue
 
-				# widen a bit based on spread
+				# widen the zone using a fraction of the spread
 				if spread > 0 and self.widen_factor_spread > 0:
 					buffer_ = self.widen_factor_spread * spread
 					low -= buffer_
@@ -194,6 +192,7 @@ class ohlcv_bid_ask(Base):
 				zones_by_time[t] = zones
 
 		self.zones_by_time = zones_by_time
+
 
 	# ------------------------------------------------------------------
 	# FILTER ZONES PER SIDE
@@ -216,12 +215,13 @@ class ohlcv_bid_ask(Base):
 	def _run_backtest_one_side(self, side: str = "buy") -> pd.DataFrame:
 		"""
 		Run liquidity-aware execution backtest for a single side ("buy" or "sell")
-		for the current asset (self.to_process, self.merged_df, self.zones_by_time).
+		for the current asset.
 
 		Returns
 		-------
 		DataFrame with columns:
-			["decision_mid", "exec_immediate", "exec_random", "exec_liq", "final_mid"]
+			["decision_mid", "exec_immediate", "exec_random",
+			 "exec_liq", "exec_vwap", "final_mid"]
 		indexed by timestamp.
 		"""
 		if not hasattr(self, "zones_by_time"):
@@ -242,17 +242,17 @@ class ohlcv_bid_ask(Base):
 			zones_all = self.zones_by_time.get(t, [])
 			zones = self._filter_zones_for_side(zones_all, decision_mid, side)
 			if not zones:
-				# No relevant zones for this side at this time → skip
+				# no relevant zones for this side at this time
 				continue
 
-			# Strategy 1: Immediate
+			# ---------- Strategy 1: Immediate ----------
 			exec_immediate = decision_mid
 
-			# Strategy 2: Random in window
+			# ---------- Strategy 2: Random ----------
 			rand_idx = self.rng.integers(0, len(future))
 			exec_random = float(future["mid"].iloc[rand_idx])
 
-			# Strategy 3: Liquidity-aware
+			# ---------- Strategy 3: Liquidity-aware ----------
 			exec_liq = None
 			for _, row in future.iterrows():
 				m = float(row["mid"])
@@ -264,6 +264,20 @@ class ohlcv_bid_ask(Base):
 			if exec_liq is None:
 				exec_liq = float(future["mid"].iloc[-1])
 
+			# ---------- Strategy 4: VWAP ----------
+			# try to use volume column if present, else simple mean
+			volume_col = None
+			for cand in ["Volume", "volume", "VOL", "vol"]:
+				if cand in future.columns:
+					volume_col = cand
+					break
+
+			if volume_col is not None and future[volume_col].sum() > 0:
+				exec_vwap = float((future["mid"] * future[volume_col]).sum() /
+								  future[volume_col].sum())
+			else:
+				exec_vwap = float(future["mid"].mean())
+
 			final_mid = float(future["mid"].iloc[-1])
 
 			rows.append({
@@ -272,15 +286,18 @@ class ohlcv_bid_ask(Base):
 				"exec_immediate": exec_immediate,
 				"exec_random": exec_random,
 				"exec_liq": exec_liq,
+				"exec_vwap": exec_vwap,
 				"final_mid": final_mid,
 			})
 
 		if not rows:
 			return pd.DataFrame(columns=[
-				"decision_mid", "exec_immediate", "exec_random", "exec_liq", "final_mid"
+				"decision_mid", "exec_immediate", "exec_random",
+				"exec_liq", "exec_vwap", "final_mid"
 			])
 
 		return pd.DataFrame(rows).set_index("timestamp")
+
 
 	# ------------------------------------------------------------------
 	# METRICS
@@ -298,18 +315,22 @@ class ohlcv_bid_ask(Base):
 			adverse = final_mid > exec
 		"""
 		out = results.copy()
-		for col in ["exec_immediate", "exec_random", "exec_liq"]:
+
+		for col in ["exec_immediate", "exec_random", "exec_liq", "exec_vwap"]:
 			if side == "buy":
 				out[f"slip_{col}"] = (out[col] - out["decision_mid"]) / out["decision_mid"]
 				out[f"adv_{col}"] = out["final_mid"] < out[col]
 			else:  # sell
 				out[f"slip_{col}"] = (out["decision_mid"] - out[col]) / out["decision_mid"]
 				out[f"adv_{col}"] = out["final_mid"] > out[col]
+
 		return out
+
 
 	def _summarize(self, results: pd.DataFrame) -> pd.DataFrame:
 		"""
-		Summary table: mean slippage & adverse selection probability.
+		Summary table: mean slippage & adverse selection probability
+		for all execution strategies.
 		"""
 		if results.empty:
 			return pd.DataFrame(
@@ -322,13 +343,16 @@ class ohlcv_bid_ask(Base):
 				results["slip_exec_immediate"].mean(),
 				results["slip_exec_random"].mean(),
 				results["slip_exec_liq"].mean(),
+				results["slip_exec_vwap"].mean(),
 			],
 			"Adverse selection prob.": [
 				results["adv_exec_immediate"].mean(),
 				results["adv_exec_random"].mean(),
 				results["adv_exec_liq"].mean(),
+				results["adv_exec_vwap"].mean(),
 			],
-		}, index=["Immediate", "Random", "Liquidity-aware"])
+		}, index=["Immediate", "Random", "Liquidity-aware", "VWAP"])
+
 
 	# ------------------------------------------------------------------
 	# PUBLIC: RUN BACKTEST FOR CURRENT ASSET
@@ -362,25 +386,78 @@ class ohlcv_bid_ask(Base):
 		self.summary_buy = summary_buy
 		self.summary_sell = summary_sell
 
-		
+	
 	def main(self):
 		"""
-		Launch BT.
+		Launch H4 backtest for all assets in parallel with joblib.
 		"""
-		self.get_files()
-		
-		for i in range(len(self.df_assets)):
-			self.to_process = self.df_assets.loc[i]
-			print(self.to_process)
-			self.load_data()
-			print(self.merged_df.head(), self.bounds.head())
+		self.get_files()   # fills self.df_assets etc.
 
-			# Run H4 backtest for this asset
-			self.run_backtest_current_asset()
+		# Run all assets in parallel
+		summaries_list = Parallel(n_jobs=-1)(
+			delayed(run_for_asset)(row)
+			for _, row in self.df_assets.iterrows()
+		)
 
-			break  # remove this if you want to loop over all assets
+		# Concatenate all per-asset summaries
+		all_summaries = pd.concat(summaries_list, ignore_index=True)
 
+		# Save to disk once
+		out_path = os.path.join(self.results_path, "backtest_summaries_all_assets.csv")
+		all_summaries.to_csv(out_path, index=False)
+
+		print("\n=== Global H4 summary saved to ===")
+		print(out_path)
 			
+
+def run_for_asset(asset_row):
+	"""
+	Run the full H4 backtest for a single asset.
+
+	Parameters
+	----------
+	asset_row : pd.Series
+		One row from df_assets (contains RIC, paths, Tick_step, etc.)
+
+	Returns
+	-------
+	pd.DataFrame
+		Tidy summary with columns:
+		["asset", "side", "strategy", "Mean slippage", "Adverse selection prob."]
+	"""
+	bt = ohlcv_bid_ask()          # new instance per process
+	bt.to_process = asset_row     # tell it which asset to use
+	bt.load_data()                # builds merged_df and bounds
+	bt.run_backtest_current_asset()
+
+	asset_ric = asset_row["RIC"]
+
+	out = []
+
+	# BUY
+	if hasattr(bt, "summary_buy") and bt.summary_buy is not None and not bt.summary_buy.empty:
+		tmp = bt.summary_buy.copy()
+		tmp["asset"] = asset_ric
+		tmp["side"] = "buy"
+		tmp["strategy"] = tmp.index
+		out.append(tmp.reset_index(drop=True))
+
+	# SELL
+	if hasattr(bt, "summary_sell") and bt.summary_sell is not None and not bt.summary_sell.empty:
+		tmp = bt.summary_sell.copy()
+		tmp["asset"] = asset_ric
+		tmp["side"] = "sell"
+		tmp["strategy"] = tmp.index
+		out.append(tmp.reset_index(drop=True))
+
+	if out:
+		return pd.concat(out, ignore_index=True)
+	else:
+		# no data (e.g. no zones), return empty frame with correct columns
+		return pd.DataFrame(
+			columns=["asset", "side", "strategy", "Mean slippage", "Adverse selection prob."]
+		)
+
 
 if __name__ == "__main__":
 	
