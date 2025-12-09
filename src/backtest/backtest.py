@@ -45,6 +45,7 @@ class ohlcv_bid_ask(Base):
 		self.results_path = os.path.join(self.root_path,'results','clustering')
 		self.df_assets = pd.read_csv(os.path.join(self.data_path, 'assets.csv'), index_col=0)#[['ISIN','RIC']]
 		self.files_input = pd.DataFrame(columns=['ISIN','data'])
+		self.files = {}
 
 	def get_files(self):
 		"""
