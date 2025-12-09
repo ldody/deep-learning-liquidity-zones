@@ -79,7 +79,7 @@ class RegressionPreprocess(Base):
 		scaled_ohlcv, scaled_data, ls_scaler_p, ls_scaler_v, scaler_r, scaler_nb = self.scaling(ohlcv, data)
 		
 		n_interval = scaler_nb.transform(n_interval.reshape(-1, 1))
-		
+				
 		return scaled_data, scaled_ohlcv, n_interval, ls_scaler_p, ls_scaler_v, scaler_r, scaler_nb, dates
 		
 
@@ -106,7 +106,7 @@ class RegressionPreprocess(Base):
 				continue
 			
 			else: 
-				index_tokeep.append(i)
+				index_tokeep.append(t)
 
 			sequences_data.append(df_data[df_data['index'] == t].to_numpy())
 			sequences_n_interval.append(float(df_data.loc[df_data['index'] == t, 'rank_size'].max()))
