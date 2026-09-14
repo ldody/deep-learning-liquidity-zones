@@ -365,5 +365,3 @@ The code reflects the computational environment and research workflow used durin
 ## Author
 
 **Léo Dody**
-
-Research interests: financial machine learning, market microstructure, deep learning, high-frequency data, liquidity modeling, and quantitative finance.
